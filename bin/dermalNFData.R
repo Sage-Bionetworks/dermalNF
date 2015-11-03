@@ -4,7 +4,8 @@
 ## Author: Sara Gosline
 ## Email: sara.gosline@sagebase.org
 ###
-
+library(synapseClient)
+synapseLogin()
 ##SNP data files
 snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
 

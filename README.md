@@ -16,5 +16,5 @@ analysis of each type of data can be found here:
 * RNA-Sequencing
 * iTRAQ Proteomics
 
-Binaries used to process this data can be found in ./bin/ while specific
-analytical tasks can be found in ./analysis.
+Binaries used to process this data can be found in [the binaries directory](./bin/) while specific
+analytical tasks can be found in [the analysis directory](./analysis).
