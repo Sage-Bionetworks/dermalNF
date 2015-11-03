@@ -7,14 +7,13 @@
 library(data.table)
 library(DNAcopy)
 library(CNTools)
-library(synapseClient)
 
-#first login to synapse
-synapseLogin()
+source("../../bin/dermalNFData.R")
 
                                         #read in the annotation file. this can be big.
-anndata<-synGet('syn5005069')
-annot <- as.data.frame(fread(anndata@filePath,sep=",",header=T))
+
+annot <- snp_annotation_data()
+sample.data<-cnv_unprocessed(annot)
 
 ##get regions that are within our general region: chr17:29000019 to 30427403
 chr17.snps=annot[grep('chr17',annot$chrpos),]
@@ -27,19 +26,7 @@ chr17.snps=chr17.snps[intersect(which(pos>29000019),which(pos<30427403)),]
 
 
 #now collect samples from synapse
-##all SNP files, need to add metadata...
-snpfiles=synapseQuery('SELECT id,name,Patient_ID,Tissue_Type,Tissue_ID FROM entity where parentId=="syn5004874"')
 
-snpfiles<-snpfiles[grep("Final.csv",snpfiles[,1]),]
-sample.names<-sapply(snpfiles[,1],function(x) gsub('_Final.csv','',unlist(strsplit(x,split='-'))[3]))
-
-
-sample.data<-lapply(snpfiles[,2],function(synid){
-    fname=synGet(synid)
-    data <- as.data.frame(fread(fname@filePath,sep=",",header=T))
-    ad<-data[match(annot$Name,data$'SNP.Name'),]
-    return(ad)
-})
 
 #remove x/y here
 is.autosome <- as.character(annot$chr) %in% as.character(1:22)
