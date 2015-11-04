@@ -44,27 +44,21 @@ library(ggplot2)
 ##create ggplot-associated data.frame
 list.of.lists<-c(LogRatio=c(),BAlleleFreq=c(),Sample=c(),SampleType=c(),NF1Region=c(),Position=c(),Chromosome=c(),Patient=c())
 
-for(i in sample.names){
+for(i in names(sample.data)){
     #first get general population distribution
     list.of.lists$LogRatio=c(list.of.lists$LogRatio,lrr[,i])
     list.of.lists$BAlleleFreq=c(list.of.lists$BAlleleFreq,baf[,i])
     list.of.lists$Sample=c(list.of.lists$Sample,rep(i,nrow(lrr)))
-    if (i%in%c('0103','0104','0105','0106','0107','0108','0109','0110','0111','0112')){
+    if(snp.tissue[[i]]=='PBMC'){
         st<-rep('Blood',nrow(lrr))
-#        sst<-rep('Blood',nrow(chr17.lrr))
     }else{
         st<-rep('Tumor',nrow(lrr))
-#        sst<-rep('Tumor',nrow(chr17.lrr))
     }
     list.of.lists$SampleType=c(list.of.lists$SampleType,st)
     list.of.lists$NF1Region=c(list.of.lists$NF1Region,in.region)
     list.of.lists$Position=c(list.of.lists$Position,all.pos)
     list.of.lists$Chromosome=c(list.of.lists$Chromosome,all.chr)
-    ##now get frequencies in that region of interest
- #   chr17.lists$LogRatio<-c(chr17.lists$LogRatio,chr17.lrr[,i])
- #   chr17.lists$BAlleleFreq=c(chr17.lists$BAlleleFreq,chr17.baf[,i])
- #   chr17.lists$Sample=c(chr17.lists$Sample,rep(i,nrow(chr17.lrr)))
- #   chr17.lists$SampleType=c(chr17.lists$SampleType,sst)
+
 
 
 }
@@ -72,26 +66,19 @@ df<-data.frame(list.of.lists)
 #chr17.df<-data.frame(chr17.lists)
 
 #now plot the data
-pdf('dermalNF_cnv_plots.pdf')
-m<-ggplot(df,aes(x=LogRatio,colour=SampleType,linetype=NF1Region))
-m<-m + geom_density() + xlim(-2.5,2)
-print(m)
+## pdf('dermalNF_cnv_plots.pdf')
+## m<-ggplot(df,aes(x=LogRatio,colour=SampleType,linetype=NF1Region))
+## m<-m + geom_density() + xlim(-2.5,2)
+## print(m)
 
-m<-ggplot(df,aes(x=BAlleleFreq,colour=SampleType,linetype=NF1Region))
-m<-m + geom_density() + xlim(-.1,1.1)
-print(m)
+## m<-ggplot(df,aes(x=BAlleleFreq,colour=SampleType,linetype=NF1Region))
+## m<-m + geom_density() + xlim(-.1,1.1)
+## print(m)
 
-#now let's try histograms
-m<-ggplot(df,aes(x=LogRatio,fill=SampleType,alpha=0.5,linetype=NF1Region))
-m<-m + geom_histogram() + xlim(-2.5,2)
-print(m)
-
-m<-ggplot(df,aes(x=BAlleleFreq,fill=SampleType,alpha=0.5,linetype=NF1Region))
-m<-m + geom_histogram() + xlim(-.1,1.1)
-print(m)
+## dev.off()
 
 
-dev.off()
+#### TUMOR vs BLOOD in chr17 region
 
 ##now focus on chr17
 pdf('dermalNF_tumor_cnv_plots.pdf')
@@ -104,17 +91,6 @@ print(m)
 m<-ggplot(tumor.df,aes(x=BAlleleFreq,colour=NF1Region))
 m<-m + geom_density() + xlim(-.1,1.1)
 print(m)
-
-#now let's try histograms
-m<-ggplot(tumor.df,aes(x=LogRatio,fill=NF1Region,alpha=0.5))
-m<-m + geom_histogram() + xlim(-2.5,2)
-print(m)
-
-m<-ggplot(tumor.df,aes(x=BAlleleFreq,fill=NF1Region,alpha=0.5))
-m<-m + geom_histogram() + xlim(-.1,1.1)
-print(m)
-
-
 dev.off()
 
 pdf('dermalNF_blood_cnv_plots.pdf')
@@ -128,23 +104,13 @@ m<-ggplot(blood.df,aes(x=BAlleleFreq,colour=NF1Region))
 m<-m + geom_density() + xlim(-.1,1.1)
 print(m)
 
-#now let's try histograms
-m<-ggplot(blood.df,aes(x=LogRatio,fill=NF1Region,alpha=0.5))
-m<-m + geom_histogram() + xlim(-2.5,2)
-print(m)
-
-m<-ggplot(blood.df,aes(x=BAlleleFreq,fill=NF1Region,alpha=0.5))
-m<-m + geom_histogram() + xlim(-.1,1.1)
-print(m)
-
-
 dev.off()
 
 #take most informative plot, do for each patient...
 
-###
+#####NOW DO the segmentation
 
-cna <- CNA(lrr[is.autosome,], as.character(annot$chr)[is.autosome], annot$pos[is.autosome], data.type="logratio",sample.names)
+cna <- CNA(lrr[is.autosome,], as.character(annot$chr)[is.autosome], annot$pos[is.autosome], data.type="logratio",names(sample.data))
 rm(annot)
 
 smoothed.cna <- smooth.CNA(cna)
@@ -165,6 +131,14 @@ pdf('chr17.seg.smoothed.sundo.pdf')
 plot(chr17.smoothed.sundo, plot.type="s")
 dev.off()
 
+sf=File('chr17.seg.smoothed.sundo.pdf',parentId='syn5049702')
+synStore(sf,used=list(list(name='segmentCNVData.R',
+                url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                list(name='dermalNFData.R',
+                     url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                list(entity='syn5005069',wasExecuted=FALSE)))
+
+
 ##now get the region around chr17 to get region of interest, then re-plot b-allele frequency and logR
 
 
@@ -174,17 +148,29 @@ write.table(segment.smoothed.cna.sundo$output, file="dermal_nf_cbs_undosd2.seg",
             sep="\t",quote=FALSE,row.names=F)
 
 
-## globalsd <- sapply(sample.names, function(s){
-##   sd(na.omit(cna[,s]))
-## })
-## par(mar=c(10,4,4,4))
-## barplot(globalsd,ylab="LRR standard dev",main="QC",names.arg=clnames,las=2,cex.names=.7,angle=45)
+##now we can better annotate these on synapse
 
-segdata <- segment.smoothed.cna$output
-segdata2 <- segment.smoothed.cna.sundo$output
+sf=File('dermal_nf_cbs_undosd2.seg',parentId='syn5049702')
+synStore(sf,used=list(list(name='segmentCNVData.R',
+                url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                list(name='dermalNFData.R',
+                     url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                list(entity='syn5005069',wasExecuted=FALSE)),
+         activityName='Segmentation analysis of copy number alterations')
 
-regions<-intersect(which(segdata2$loc.start>29000019),intersect(which(segdata2$loc.end<30427403),which(segdata2$chrom==17)))
-regdata<-segdata2[regions,]
+sf=File('dermal_nf_cbs_noundo.seg',parentId='syn5049702')
+synStore(sf,used=list(list(name='segmentCNVData.R',
+                url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                list(name='dermalNFData.R',
+                     url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                list(entity='syn5005069',wasExecuted=FALSE)),
+         activityName='Segmentation analysis of copy number alterations')
+
+## segdata <- segment.smoothed.cna$output
+## segdata2 <- segment.smoothed.cna.sundo$output
+
+## regions<-intersect(which(segdata2$loc.start>29000019),intersect(which(segdata2$loc.end<30427403),which(segdata2$chrom==17)))
+## regdata<-segdata2[regions,]
 
 ## plot(segment.smoothed.cna.sundo, plot.type="s",ylim=c(-2,2),xmaploc=TRUE)
 ## byChr <- subset(segment.smoothed.cna.sundo,chromlist=c("17"))
@@ -204,18 +190,18 @@ regdata<-segdata2[regions,]
 
 ########################################
 
-# cluster analysis
-cnseg <- CNSeg(regdata)
-rdseg <- getRS(cnseg, by = "region", imput = FALSE, XY = FALSE, what = "mean")
-segM <- rs(rdseg)
+## # cluster analysis
+## cnseg <- CNSeg(regdata)
+## rdseg <- getRS(cnseg, by = "region", imput = FALSE, XY = FALSE, what = "mean")
+## segM <- rs(rdseg)
 
-M <- t(do.call("rbind", lapply(4:ncol(segM), function(i) as.numeric(as.character(segM[,i])))))
+## M <- t(do.call("rbind", lapply(4:ncol(segM), function(i) as.numeric(as.character(segM[,i])))))
 
-idxs <- match(colnames(segM)[-1:-3], sample.names)
-colnames(M) <- clnames[idxs]
+## idxs <- match(colnames(segM)[-1:-3], names(sample.data))
+## colnames(M) <- clnames[idxs]
 
-plot(hclust(dist(t(M)),method="ward.D2"))
+## plot(hclust(dist(t(M)),method="ward.D2"))
 
-dissimilarity <- 1 - cor(M)
-distance <- as.dist(dissimilarity)
-plot(hclust(distance,method="ward.D2"))
+## dissimilarity <- 1 - cor(M)
+## distance <- as.dist(dissimilarity)
+## plot(hclust(distance,method="ward.D2"))
