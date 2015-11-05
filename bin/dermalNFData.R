@@ -109,13 +109,13 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 
 }
 
-prot_annotation<-function(){
+prot_annotations<-function(){
     allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
     colnames(allfiles)<-c('')
     return(allfiles)
 }
 
-prot_normalized<-function(){
+prot_normalized<-function(all.expr=TRUE){
     allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
 
     res<-sapply(allfiles$entity.id,function(x) get.protein.from.file(x,TRUE))
@@ -131,8 +131,10 @@ prot_normalized<-function(){
         expr.prots<-intersect(expr.prots,res[['Prot.ids',i]])
 
 
-    prot.ids<-unique(unlist(sapply(expr.prots,function(x) unlist(strsplit(x,split=';')))))
+    prot.ids<-unique(unlist(sapply(all.prots,function(x) unlist(strsplit(x,split=';')))))
 
+    if(all.expr)
+        all.prots<-expr.prots
                                         #now create biomart mapping
     require(biomaRt)
     ensembl=useMart("ensembl",dataset="hsapiens_gene_ensembl")
@@ -143,25 +145,28 @@ prot_normalized<-function(){
     egene='hgnc_symbol'
     gene.mapping<-getBM(attributes=c(epep,egene),filters=c(epep),values=as.list(prot.ids),mart=ensembl)
 
+    allsamps<-colnames(res)
+    expr.ratio.mat<-sapply(all.prots,function(x){
+       # pvec<-NULL
+                                        # samps<-NULL
 
-    expr.ratio.mat<-sapply(expr.prots,function(x){
-        pvec<-NULL
-        samps<-NULL
-        for(i in 1:ncol(res)){
-            rv=grep(x,res[['Prot.ids',i]])
+        pvec<-sapply(allsamps,function(i){
+            rv<-grep(x,res[['Prot.ids',i]])
             if(length(rv)==0)
-                pvec<-c(pvec,rep(0,3))
+                return(0)
             else
-                pvec<-c(pvec,res[[1,i]][rv,])
-            samps<-c(samps,colnames(res[[1,i]]))
-        }
-        names(pvec)<-samps
+                return(res[['Ratios',i]][rv])
+        })
+        names(pvec)<-allsamps
         unlist(pvec)
     })
 
+    gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
     expr.ratio.mat[which(is.na(expr.ratio.mat),arr.ind=T)]<-0.0
-    expr.ratio.mat<-expr.ratio.mat[-grep('EMPTY',rownames(expr.ratio.mat)),]
-
+    #expr.ratio.mat<-expr.ratio.mat[-grep('EMPTY',rownames(expr.ratio.mat)),]
+    gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
+    gn[which(is.na(gn))]<-colnames(expr.ratio.mat)[which(is.na(gn))]
+    colnames(expr.ratio.mat)<-gn
     return(expr.ratio.mat)
 
 
@@ -191,7 +196,7 @@ rna_count_matrix<-function(stored=TRUE){
         synq=synapseQuery("select name,id,Patient_ID,Tissue_ID from entity where parentId=='syn4984701'")
         synq<-synq[grep("accepted_hits",synq$entity.name),]
         synfiles<-sapply(synq$entity.id,synGet)
-                                        #now read in all values
+                                        #now read in alfilel values
 
         allfs<-lapply(synfiles,function(x) read.table(x@filePath,header=T,as.is=T))
         names(allfs)<-synq$entity.id
@@ -217,7 +222,7 @@ rna_count_matrix<-function(stored=TRUE){
                         url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R')),
                  activityName='Create matrix of all counts across samples')
     }else{
-        gene.pat.mat<-read.table(synGet('syn5051784')@filePat)
+        gene.pat.mat<-read.table(synGet('syn5051784')@filePath)
     }
     return(gene.pat.mat)
 

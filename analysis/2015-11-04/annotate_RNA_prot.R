@@ -33,6 +33,4 @@ deg<-rownames(res[which(res$padj<0.05),])
 npc<-prcomp(t(normCounts[deg,]),scale.=TRUE,center.=TRUE)
 ggbiplot(npc,groups=pats[,1],var.axes=F)
 
-##let's compare with proteomics then!
-mat<-prot_normalized()
 
