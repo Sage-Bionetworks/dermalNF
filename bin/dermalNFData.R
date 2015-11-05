@@ -17,7 +17,7 @@ synapseLogin()
 cnv_annotation<-function(){
     snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
 
-    names(snpfiles)<-c('synapseId','File','patiendID','tissueType','tissueID')
+    names(snpfiles)<-c('tissueType','patientID','File','tissueID','synapseID')
     return(snpfiles)
 }
 
@@ -68,7 +68,7 @@ cnv_segmented<-function(filterSD=TRUE){
     else
         si='syn5049755'
     fn<-synGet(si)
-    tab<-read.table(fn@filePath)
+    tab<-read.table(fn@filePath,header=T)
     return(tab)
 
 }
