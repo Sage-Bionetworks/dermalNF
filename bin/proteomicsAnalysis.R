@@ -1,39 +1,8 @@
 ##use this file to process the iTRAQ data
 require(synapseClient)
-syapseLogin()
+synapseLogin()
 #nfdat<-synGet('syn4984627')
-allfiles= synapseQuery('SELECT id, name FROM entity WHERE parentId=="syn4984949"')
 
-##extracts all relevant data from the file, returns a series of vectors
-get.protein.from.file<-function(sn,top_only=FALSE){
-    sd<-synGet(unlist(sn))
-tab<-read.table(sd@filePath,sep='\t',header=T,as.is=T)
-  nums<-tab[,6]
-  denoms<-tab[,7]
-  ratios<-nums/denoms
-
-  groups<-tab[,1]
-
-  u.groups<-unique(groups)
-  groups.ids<-sapply(u.groups,function(x) return(paste(unique(tab[which(tab[,1]==x),4]),collapse=';')))
-  names(groups.ids)<-u.groups
-
-  print(paste("Found",length(u.groups),'unique protein groups'))
-
-  u.tops<-sapply(u.groups,function(x) intersect(which(tab[,1]==x),which(tab[,3]=='TOP PROTEIN')))
-  #now filter for top
-  top.ratios=ratios[u.tops]
-  top.nums=nums[u.tops]
-  top.conts=denoms[u.tops]
-
-  return(list(Ratios=top.ratios,Raw=top.nums,Control=top.conts,Prot.ids=tab[u.tops,4],Origin=tab[,8]))
-
-}
-
-res<-apply(allfiles,1,function(x) get.protein.from.file(x[2],TRUE))
-#res<-sapply(allfiles,function(x) get.protein.from.file(x,TRUE))
-names(res)<-allfiles[,1]
-##now get all proteins
 
 all.prots<-NULL
 for(i in 1:ncol(res))
