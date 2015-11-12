@@ -9,17 +9,27 @@ synapseLogin()
 
 
 
-
 #################
 # CNV
 #################
 
-cnv_annotation<-function(){
+cnv_annotations<-function(){
     snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
 
     names(snpfiles)<-c('tissueType','patientID','File','tissueID','synapseID')
     return(snpfiles)
 }
+
+cnv.dat<-cnv_annotations()
+patients<-cnv.dat$patientID
+names(patients)<-sapply(cnv.dat$File,function(x) gsub('3096-PBK-','X',gsub('_Final.csv','',x)))
+patients<-sapply(patients,function(x) gsub("CT0*","",x))
+
+clnames<-paste(patients,cnv.dat$tissueID)
+names(clnames)<-names(patients)
+
+tissueType=cnv.dat$tissueType
+names(tissueType)<-names(patients)
 
 #SNP annotation file
 snp_annotation_data<-function(){
@@ -76,7 +86,7 @@ cnv_segmented<-function(filterSD=TRUE){
 #################
 #PROTEOMICS
 #################
-protein_annotation<-function(){
+protein_annotations<-function(){
     annots<-synapseQuery("select name,ID,dataType,tissueID,tissueType,patientID,sampleID from entity where parentID=='syn4984949'")
     colnames(annots)<-c()
 
@@ -109,11 +119,6 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 
 }
 
-prot_annotations<-function(){
-    allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
-    colnames(allfiles)<-c('')
-    return(allfiles)
-}
 
 prot_normalized<-function(all.expr=TRUE){
     allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
@@ -232,3 +237,6 @@ rna_count_matrix<-function(stored=TRUE){
 #################
 #WGS
 #################
+wgs_annotations<-function(){
+
+}

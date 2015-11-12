@@ -22,11 +22,30 @@ wgs_vcf='syn4984931'
 
 import synapseclient
 syn = synapseclient.Synapse()
+syn.login()
 
 query_res=syn.query("select id, name from entity where entity.parentId=='"+wgs_vcf+"'")
 
 #only get those that are not filtered already
-syn_ids=[s['entity.id'] for s in query_res['results'] if 'hard-filtered' not in s['entity.name']]
+syn_ids=[s['entity.id'] for s in query_res['results'] if 'hard-filtered' in s['entity.name']]
+
+
+##before we do anything, we need to process variants
+def varToVcf(varFile):
+    '''
+    call gatk to create vcf files
+    '''
+    output=re.sub('.hapmap','.vcf',os.path.basename(varFile))
+    cmd='java -jar ../../../GenomeAnalysisTK.jar \
+    -T VariantsToVCF \
+    -R hg19.fasta \
+    -o %s \
+    --variant:RawHapMap %s'%(output,varFile)
+    os.system(cmd)
+    return varFile
+
+
+
 
 '''
 From
@@ -67,15 +86,21 @@ java -jar GenomeAnalysisTK.jar \
 
 '''
 
-def snp_calibrate_model(fn):
-    gatk_command='java -jar GenomeAnalysisTK.jar \
+def snp_calibrate_model(fn,libdir='../../../../lib/'):
+    hapmap=os.path.join(libdir,'hapmap_3.3.hg19.sites.vcf')
+    omni=os.path.join(libdir,'1000G_omni2.5.hg19.sites.vcf')
+    otg=os.path.join(libdir,'1000G_phase1.snps.high_confidence.hg19.sites.vcf')
+    dbsnp=os.path.join(libdir,'dbsnp_138.hg19.vcf')
+    ref=os.path.join(libdir,'ucsc.hg19.fasta')
+    #ref=os.path.join(libdir,'human_g1k_v37.fasta')
+    gatk_command='java -jar ../../../GenomeAnalysisTK.jar \
     -T VariantRecalibrator \
-    -R reference.fa \
+    -R %s \
     -input %s \
-    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 hapmap.vcf \
-    -resource:omni,known=false,training=true,truth=true,prior=12.0 omni.vcf \
-    -resource:1000G,known=false,training=true,truth=false,prior=10.0 1000G.vcf \
-    -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 dbsnp.vcf \
+    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %s \
+    -resource:omni,known=false,training=true,truth=true,prior=12.0 %s  \
+    -resource:1000G,known=false,training=true,truth=false,prior=10.0 %s \
+    -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 %s \
     -an DP \
     -an QD \
     -an FS \
@@ -88,8 +113,9 @@ def snp_calibrate_model(fn):
     -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
     -recalFile recalibrate_SNP.recal \
     -tranchesFile recalibrate_SNP.tranches \
-    -rscriptFile recalibrate_SNP_plots.R '%(fn)
-    os.sys(gatk_command)
+    -rscriptFile recalibrate_SNP_plots.R '%(ref,fn,hapmap,omni,otg,dbsnp)
+
+    os.system(gatk_command)
 
 
 def snp_apply_model(fn):
@@ -117,8 +143,8 @@ def indel_apply_model(fn):
     apply indel model to data
     '''
 
-
-#now for each synapse id, get file and runcode on it!
-for si in syn_ids:
-    so=syn.get(si)
-    vcf=so.path
+def main():
+    #now for each synapse id, get file and runcode on it!
+    for si in syn_ids:
+        so=syn.get(si)
+        vcf=so.path
