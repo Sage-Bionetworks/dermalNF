@@ -13,6 +13,7 @@ open('allVcfFiles.txt','w').writelines(synfiles)
 vcf='allDermalNFSamples.vcf'
 
 cmd='bcftools merge -o %s -l %s --use-header %s'%(vcf,'allVcfFiles.txt',synfiles[0])
+print cmd
 
 os.system(cmd)
 #now call vqsr?
