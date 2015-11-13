@@ -6,7 +6,7 @@
 ###
 library(synapseClient)
 synapseLogin()
-
+library(data.table)
 
 
 #################

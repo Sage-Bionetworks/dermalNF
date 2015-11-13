@@ -1,7 +1,5 @@
 library(ggbiplot)
 
-library(synapseClient)
-synapseLogin()
 
 source('../../bin/dermalNFData.R')
 
@@ -39,29 +37,55 @@ plot(hclust(dist(t(nm))))
 
 
 dev.off()
-library(ggplot)
+library(ggplot2)
 df<-data.frame(t(nm),Patient=annots$patientId)
 
 pdf("RNANormalizedCounts.pdf")
-p<-ggplot(df,aes(Patient,KRAS))+geom_boxplot()
+p<-ggplot(df,aes(Patient,KRAS))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
 print(p)
 
-p<-ggplot(df,aes(Patient,NF1))+geom_boxplot()
+p<-ggplot(df,aes(Patient,NF1))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
 print(p)
 
-p<-ggplot(df,aes(Patient,NRAS))+geom_boxplot()
+p<-ggplot(df,aes(Patient,NRAS))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
 print(p)
 
-p<-ggplot(df,aes(Patient,BRAF))+geom_boxplot()
+p<-ggplot(df,aes(Patient,BRAF))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
 print(p)
+
+p<-ggplot(df,aes(Patient,HRAS))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
+
+print(p)
+
+p<-ggplot(df,aes(Patient,PTPN11))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
+print(p)
+
+p<-ggplot(df,aes(Patient,MAP2K1))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
+print(p)
+
+p<-ggplot(df,aes(Patient,MAP2K1))+geom_boxplot()+theme(axis.text.x=element_text(angle=90, hjust=1))
+print(p)
+
 dev.off()
 
 
 library(pheatmap)
-allvars<-apply(nm,1,var,na.rm=T)
-alldisp<-apply(nm,1,function(x) var(x)^2/mean(x))
-most.d<-nm[order(alldisp,decreasing=T)[1:100],]
-pheatmap(log10(most.d+0.00001),cellheight=10,cellwidth=10,annotation_col=data.frame(Patient=sapply(colnames(most.d),function(x) unlist(strsplit(x,split=' '))[1])),clustering_distance_cols='correlation',clustering_method='ward',file='most100Dispersed.png')
+nz<-nm[which(apply(nm,1,function(x) all(x>0))),]
 
-most.d<-nm[order(allvars,decreasing=T)[1:100],]
-pheatmap(log10(most.d+0.00001),cellheight=10,cellwidth=10,annotation_col=data.frame(Patient=sapply(colnames(most.d),function(x) unlist(strsplit(x,split=' '))[1])),clustering_distance_cols='correlation',clustering_method='ward',file='most100variable.png')
+allvars<-apply(nz,1,var,na.rm=T)
+alldisp<-apply(nz,1,function(x) var(x)^2/mean(x))
+most.d<-nz[order(alldisp,decreasing=T)[1:100],]
+pheatmap(log10(most.d+0.00001),cellheight=10,cellwidth=10,annotation_col=data.frame(Patient=sapply(colnames(most.d),function(x) unlist(strsplit(x,split=' '))[1])),clustering_distance_cols='correlation',clustering_method='ward.D2',file='most100Dispersed.png')
+
+most.d<-nz[order(allvars,decreasing=T)[1:100],]
+pheatmap(log10(most.d+0.00001),cellheight=10,cellwidth=10,annotation_col=data.frame(Patient=sapply(colnames(most.d),function(x) unlist(strsplit(x,split=' '))[1])),clustering_distance_cols='correlation',clustering_method='ward.D2',file='most100variable.png')
+
+#now what can we do??
+                                        #try to get within patient dispersion
+
+
+perPatDisp=apply(nz,1,function(x){
+    sapply(unique(annots$patientId),function(y){
+        vals=x[grep(y,colnames(nz))]
+        var(vals,na.rm=T)^2/mean(vals,na.rm=T)})})
+meanDisp<-apply(perPatDisp,2,median,na.rm=T)
