@@ -116,7 +116,7 @@ dev.off()
 
 #####NOW DO the segmentation
 
-cna <- CNA(lrr[is.autosome,], as.character(annot$chr)[is.autosome], annot$pos[is.autosome], data.type="logratio",names(sample.data))
+cna <- CNA(lrr[is.autosome,], as.character(all.chr)[is.autosome], all.pos[is.autosome], data.type="logratio",names(sample.data))
 rm(annot)
 
 smoothed.cna <- smooth.CNA(cna)
