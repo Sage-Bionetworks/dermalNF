@@ -86,7 +86,7 @@ java -jar GenomeAnalysisTK.jar \
 
 '''
 
-def snp_calibrate_model(fn,libdir='../../../../lib/'):
+def snp_calibrate_model(fn,libdir='../../lib/'):
     hapmap=os.path.join(libdir,'hapmap_3.3.hg19.sites.vcf')
     omni=os.path.join(libdir,'1000G_omni2.5.hg19.sites.vcf')
     otg=os.path.join(libdir,'1000G_phase1.snps.high_confidence.hg19.sites.vcf')
