@@ -18,12 +18,16 @@ cnv.dat<-cnv_annotations()
 snp.tissue<-cnv.dat$tissueType
 names(snp.tissue)<-cnv.dat$synapseID
 ##get regions that are within our general region: chr17:29000019 to 30427403
-chr17.snps=annot[grep('chr17',annot$chrpos),]
+#chr17.snps=annot[grep('chr17',annot$chrpos),]
+chr17.snps=annot[grep('17',annot$Chr),]
 
-all.pos<-as.numeric(sapply(annot$chrpos,function(x) unlist(strsplit(x,split='_'))[2]))
-all.chr<-sapply(annot$chrpos,function(x) unlist(strsplit(x,split='_'))[1])
+#all.pos<-as.numeric(sapply(annot$chrpos,function(x) unlist(strsplit(x,split='_'))[2]))
+                                        #all.chr<-sapply(annot$chrpos,function(x) unlist(strsplit(x,split='_'))[1])
 
-pos<-all.pos[grep('chr17',annot$chrpos)]
+all.pos<-annot$MapInfo
+all.chr<-annot$Chr
+
+pos<-all.pos[grep('17',annot$Chr)]
 chr17.snps=chr17.snps[intersect(which(pos>29000019),which(pos<30427403)),]
 
 
