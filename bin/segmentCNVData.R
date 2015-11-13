@@ -14,8 +14,9 @@ source("../../bin/dermalNFData.R")
 
 annot <- snp_annotation_data()
 sample.data<-cnv_unprocessed(annot)
-snp.tissue<-sample.data$tissueType
-names(snp.tissue)<-names(sample.data)
+cnv.dat<-cnv_annotations()
+snp.tissue<-cnv.dat$tissueType
+names(snp.tissue)<-cnv.dat$synapseID
 ##get regions that are within our general region: chr17:29000019 to 30427403
 chr17.snps=annot[grep('chr17',annot$chrpos),]
 

@@ -35,7 +35,7 @@ names(tissueType)<-names(patients)
 snp_annotation_data<-function(){
     ##need to downlod and read in large annotation file as well
     print("Retrieving OMNI Array SNP annotation data from Synapse...")
-    anndata<-synGet('syn5005069')
+    anndata<-synGet('syn5282309')
     annot <- as.data.frame(fread(anndata@filePath,sep=",",header=T))
     return(annot)
 }
