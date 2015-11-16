@@ -43,7 +43,7 @@ pheatmap(log10(prot[,-1]+0.0001),annotation_col=data.frame(Patients=pats),
 
 synStore(File('log10_nonzero_Proteins.png',parentId='syn4984701'),
          activityName='Log10 heatmap of proteins that are expressed in at least one experiment',
-         used=list(name='evalGenesOfInterest.R',url=''))
-
+         used=list(list(name='evalGenesOfInterest.R',url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2015-11-16/evalGenesOfInterest.R')))
+      
  # pheatmap(log10(prot[,-1]+0.0001),annotation_col=data.frame(Patients=pats),cellheight = 10,cellwidth = 10,labels_row=prot[,1],file='allProteins.png')
 ##
