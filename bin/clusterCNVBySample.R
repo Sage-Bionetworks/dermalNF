@@ -132,7 +132,7 @@ plotClusteredSegmentData<-function(segdat,byval='gene',metric='median',topGenes=
     tm=M[order(gcors,decreasing=T)[1:100],]
 
 
-    fname=paste('most_gt_correlated',topGenes,byval,'by',metric,'logRRatios.pdf',sep='_')
+    fname=paste('most_tissue_correlated',topGenes,byval,'by',metric,'logRRatios.pdf',sep='_')
     pdf(fname)
     pc=prcomp(t(tm),scale.=T,center.=T)
     ggbiplot(pc,groups=as.factor(patients[colnames(tm)]),choices=1:2,obs.scale=1,var.scale=1,ellipse=TRUE,var.axes=FALSE) #+
@@ -140,7 +140,7 @@ plotClusteredSegmentData<-function(segdat,byval='gene',metric='median',topGenes=
     #theme(legend.direction = 'horizontal', legend.position = 'top')
     dev.off()
 
-    fname=paste('most_gt_correlated',topGenes,byval,'by',metric,'logRRatios_dendro.png',sep='_')
+    fname=paste('most_tissue_correlated',topGenes,byval,'by',metric,'logRRatios_dendro.png',sep='_')
     png(fname)
     colnames(tm) <- clnames[colnames(tm)]
     plot(hclust(dist(t(tm))),main="Clustering of samples based on distance")
@@ -149,10 +149,10 @@ plotClusteredSegmentData<-function(segdat,byval='gene',metric='median',topGenes=
     fname=paste('most_tissue_correlated',topGenes,byval,'by',metric,'logRRatios_heatmap.png',sep='_')
     colnames(tm)<-names(colnames(tm))
     if(byval=='gene')
-        pheatmap(tm,annotation_row=data.frame(NF1Corr=nfcor),annotation_col=data.frame(TissueType=tissueType,Patient=patients),
+      pheatmap(tm,annotation_col=data.frame(TissueType=tissueType,Patient=patients),
                  cellwidth=10,cellheight=10,file=fname)
     else
-        pheatmap(tm,annotation_col=data.frame(TissueType=tissueType),
+        pheatmap(tm,annotation_col=data.frame(TissueType=tissueType,Patient=patients),
                  cellwidth=10,cellheight=10,file=fname)
  }
 
