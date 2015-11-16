@@ -88,8 +88,10 @@ cnv_segmented<-function(filterSD=TRUE){
 #PROTEOMICS
 #################
 protein_annotations<-function(){
-    annots<-synapseQuery("select name,ID,dataType,tissueID,tissueType,patientID,sampleID from entity where parentID=='syn4984949'")
-    colnames(annots)<-c()
+    annots<-synapseQuery("select name,ID,dataType,tissueID,tissueType,patientID,sampleID from entity where parentId=='syn4984949'")
+    annots<-annots[-grep('EMPTY',annots$entity.name),]
+      
+    colnames(annots)<-c('tissueType','dataType','sampleId','patientId','fileName','tissueId','synapseId')
 
     return(annots)
 }
@@ -121,29 +123,31 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 }
 
 
-prot_normalized<-function(all.expr=TRUE){
-    allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
+prot_normalized<-function(store=FALSE,all.expr=TRUE){
+  #store indicates we should calculate the values and uplod to synapse, otherwise we can just download pre-computed
+  #all.expr means select only those proteins that non-zero in at least one sample
+  
+  allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
 
+
+
+  if(store){
     res<-sapply(allfiles$entity.id,function(x) get.protein.from.file(x,TRUE))
     names(res)<-allfiles$entity.id
-
-    #first collect all proteins annotated in any file
+    #first col  lect all proteins annotated in any file
     all.prots<-NULL
     for(i in 1:ncol(res))
         all.prots<-union(all.prots,res[['Prot.ids',i]])
     #filter for those that are expressed across all samples
-    expr.prots<-res[['Prot.ids',1]]
-    for(i in 2:ncol(res))
-        expr.prots<-intersect(expr.prots,res[['Prot.ids',i]])
-
+ #   expr.prots<-res[['Prot.ids',1]]
+#    for(i in 2:ncol(res))
+#        expr.prots<-intersect(expr.prots,res[['Prot.ids',i]])
 
     prot.ids<-unique(unlist(sapply(all.prots,function(x) unlist(strsplit(x,split=';')))))
 
-    if(all.expr)
-        all.prots<-expr.prots
                                         #now create biomart mapping
     require(biomaRt)
-    ensembl=useMart("ensembl",dataset="hsapiens_gene_ensembl")
+    ensembl=useMart("ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl",host='www.ensembl.org')
     filters = listFilters(ensembl)
     attributes = listAttributes(ensembl)
 
@@ -173,10 +177,30 @@ prot_normalized<-function(all.expr=TRUE){
     gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
     gn[which(is.na(gn))]<-colnames(expr.ratio.mat)[which(is.na(gn))]
     colnames(expr.ratio.mat)<-gn
+    expr.ratio.mat<-t(expr.ratio.mat)
+    df=data.frame(Protein=rownames(expr.ratio.mat),expr.ratio.mat)
+    write.table(df,file='proteinFoldChangeOverControl.txt',sep='\t',row.names=F)
+    print('Storing file on Synapse...')
+    synStore(File('proteinFoldChangeOverControl.txt',parentId='syn4984703'),
+             used=list(c(sapply(allfiles$entity.id,function(x) list(entity=x)),list(name='dermalNFData.R',url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R'))),
+             activityName='Computed ratios between protein and control',
+             activityDescription='called prot_normalized with store=TRUE')
+    expr.ratio.mat<-df
+  }else{
+    matfile=synGet('syn5305003')
+    expr.ratio.mat<-as.data.frame(fread(matfile@filePath,sep='\t',header=T))
+  }
+    
+  if(all.expr){
+    zo=which(apply(expr.ratio.mat[,-1],1,function(x) all(x==0)))
+    if(length(zo)>0){
+      print(paste('Removing',length(zo),'proteins from matrix because they have only 0-values'))
+      expr.ratio.mat<-expr.ratio.mat[-zo,]
+    }
     return(expr.ratio.mat)
+  }
 
-
-
+  return(expr.ratio.mat)
 }
 
 
@@ -187,6 +211,7 @@ prot_normalized<-function(all.expr=TRUE){
 rna_annotations<-function(){
     synq=synapseQuery("select name,id,Patient_ID,Tissue_ID from entity where parentId=='syn4984701'")
     colnames(synq)<-c('tissueID','fileName','synapseId','patientId')
+    synq=synq[grep('_featureCounts.txt',synq$fileName),]
     return(synq)
 }
 
@@ -196,7 +221,7 @@ rna_bam_files<-function(){
 
 
 ##here are the count files analyzed by featureCounts
-rna_count_matrix<-function(stored=TRUE){
+rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
 
     if(!stored){
         synq=synapseQuery("select name,id,Patient_ID,Tissue_ID from entity where parentId=='syn4984701'")
@@ -230,7 +255,24 @@ rna_count_matrix<-function(stored=TRUE){
     }else{
         gene.pat.mat<-read.table(synGet('syn5051784')@filePath)
     }
-    return(gene.pat.mat)
+  
+    gene.pat.mat<-t(gene.pat.mat)
+  
+    if(doNorm){
+      print('Performing size factor adjustment to samples')
+      require(DESeq2)
+      samp=data.frame(SampleID=colnames(gene.pat.mat))
+      cds<- DESeqDataSetFromMatrix(gene.pat.mat,colData=samp,~SampleID)#now collect proteomics data
+      
+      sizeFac<-estimateSizeFactors(cds)
+      
+      normCounts<-gene.pat.mat/sizeFac@colData$sizeFactor
+      
+      gene.pat.mat<-normCounts
+    }
+    sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
+    
+    return(gene.pat.mat[sel.vals,])
 
 }
 
