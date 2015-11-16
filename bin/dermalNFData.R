@@ -21,6 +21,7 @@ cnv_annotations<-function(){
 }
 
 cnv.dat<-cnv_annotations()
+cnv.dat<-cnv.dat[which(!is.na(cnv.dat$patientID)),]
 patients<-cnv.dat$patientID
 names(patients)<-sapply(cnv.dat$File,function(x) gsub('3096-PBK-','X',gsub('_Final.csv','',x)))
 patients<-sapply(patients,function(x) gsub("CT0*","",x))

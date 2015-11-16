@@ -14,7 +14,10 @@ source("../../bin/dermalNFData.R")
 if(!exists("segdata2"))
     segdata2 <- cnv_segmented(TRUE)
 
-
+#rename these
+names(patients)<-cnv.dat$synapseID
+names(tissueType)<-cnv.dat$synapseID
+names(clnames)<-cnv.dat$synapseID
 
 ####Plot clusters - assumes we're in analysis directory!!
 if(!exists("geneInfo"))
@@ -94,10 +97,10 @@ plotClusteredSegmentData<-function(segdat,byval='gene',metric='median',topGenes=
     pdf(fname)
     pc=prcomp(t(tm),scale.=T,center.=T)
     gb<-ggbiplot(pc,groups=as.factor(patients[colnames(M)]),choices=1:2,obs.scale=1,var.scale=1,ellipse=TRUE,var.axes=FALSE) +
-        scale_color_discrete(name = '') +
+        scale_color_discrete(name = '') #+
       #      theme(legend.direction = 'horizontal', legend.position = 'top')
     print(gb)
-    colnames(tm) <- clnames[colnames(tm)]
+    colnames(tm) <- clnames[colnames(M)]
 
     dev.off()
     fname=paste('most_variable',topGenes,byval,'by',metric,'logRRatios_dendro.png',sep='_')
