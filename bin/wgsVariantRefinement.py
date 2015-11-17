@@ -11,7 +11,7 @@ _email_='sara.gosline@sagebase.org'
 
 
 import sys,os,re
-
+import argparse
 
 ##goal is to get unfiltered vcf files from dermal nf and execute a series of
 ##java/r commands on each.
@@ -28,22 +28,6 @@ query_res=syn.query("select id, name from entity where entity.parentId=='"+wgs_v
 
 #only get those that are not filtered already
 syn_ids=[s['entity.id'] for s in query_res['results'] if 'hard-filtered' not in s['entity.name']]
-
-
-##before we do anything, we need to process variants
-def varToVcf(varFile):
-    '''
-    call gatk to create vcf files
-    '''
-    output=re.sub('.hapmap','.vcf',os.path.basename(varFile))
-    cmd='java -jar ../../../GenomeAnalysisTK.jar \
-    -T VariantsToVCF \
-    -R hg19.fasta \
-    -o %s \
-    --variant:RawHapMap %s'%(output,varFile)
-    os.system(cmd)
-    return varFile
-
 
 
 
@@ -86,14 +70,20 @@ java -jar GenomeAnalysisTK.jar \
 
 '''
 
-def snp_calibrate_model(fn,libdir='../../lib/'):
+def snp_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     hapmap=os.path.join(libdir,'hapmap_3.3.hg19.sites.vcf')
     omni=os.path.join(libdir,'1000G_omni2.5.hg19.sites.vcf')
     otg=os.path.join(libdir,'1000G_phase1.snps.high_confidence.hg19.sites.vcf')
     dbsnp=os.path.join(libdir,'dbsnp_138.hg19.vcf')
     ref=os.path.join(libdir,'ucsc.hg19.fasta')
+
+    base=os.path.basename(fn).split('.')[0]
+    tran='recal_SNP_'+base+'.tranches'
+    recal='recal_SNP_'+base+'.recal'
+    rscr='recalibrate_SNP_'+base+'_plots.R'
+    gatk=os.path.join(gatkDir,'GenomeAnalysisTK.jar')
     #ref=os.path.join(libdir,'human_g1k_v37.fasta')
-    gatk_command='java -jar ../../../GenomeAnalysisTK.jar \
+    gatk_command='java -jar %s \
     -T VariantRecalibrator \
     -R %s \
     -input %s \
@@ -104,24 +94,40 @@ def snp_calibrate_model(fn,libdir='../../lib/'):
     -an DP \
     -an QD \
     -an FS \
-    -an SOR \
     -an MQ \
     -an MQRankSum \
     -an ReadPosRankSum \
-    -an InbreedingCoeff \
     -mode SNP \
     -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
-    -recalFile recalibrate_SNP.recal \
-    -tranchesFile recalibrate_SNP.tranches \
-    -rscriptFile recalibrate_SNP_plots.R '%(ref,fn,hapmap,omni,otg,dbsnp)
+    -recalFile %s \
+    -tranchesFile %s \
+    -rscriptFile %s '%(gatk,ref,fn,hapmap,omni,otg,dbsnp,recal,tran,rscr)
+    print gatk_command
 
     os.system(gatk_command)
+    return recal,tran,rscr
 
-
-def snp_apply_model(fn):
+def snp_apply_model(fn,recalFile,trancheFile,libdir,gatkDir):
     '''
     This calls the GATK command for indels
     '''
+
+    output='recalibrated_snps_for_'+os.path.basename(fn)
+    ref=os.path.join(libdir,'ucsc.hg19.fasta')
+    gatk=os.path.join(gatkDir,'GenomeAnalysisTK.jar')
+
+    cmd='java -jar %s \
+    -T ApplyRecalibration \
+    -R %s \
+    -input %s \
+    -mode SNP \
+    --ts_filter_level 99.0 \
+    -recalFile recalibrate_SNP.recal \
+    -tranchesFile recalibrate_SNP.tranches \
+    -o %s'%(gark,ref,fn,output)
+    print(cmd)
+    os.system(cmd)
+    return output
 
 '''
     Now we do the same song and dance for indels - decide on parameters,
@@ -144,7 +150,49 @@ def indel_apply_model(fn):
     '''
 
 def main():
-    #now for each synapse id, get file and runcode on it!
-    for si in syn_ids:
-        so=syn.get(si)
-        vcf=so.path
+    parser=argparse.ArgumentParser(description='Run GATK using the command line')
+    ##we can take either a vcf or synapse id
+    parser.add_argument('--vcf',dest='vcf_file',help='Path to VCF file to process')
+    parser.add_argument('--synapseId',dest='synapse_id',help='Synapse ID of VCF to process')
+    ##paths to library and GATK
+    parser.add_argument('--libDir',dest='libdir',help='Relative path the reference fasta and vcf files')
+    parser.add_argument('--gatkDir',dest='gatkdir',help='Relative path to GATK')
+    #model type
+    parser.add_argument('--modelType',dest='model',default='snp',help='Either SNP or INDEL, depending on what type of model to calibrate/apply')
+
+    args=parser.parse_args()
+
+    if args.vcf_file is None:
+        if args.synapse_id is None:
+            print "Need to have either a VCF or synapse identifier, try again"
+            sys.exit()
+        else:
+            vcf=synGet(args.synapse_id).path
+    else:
+        vcf=args.vcf_file
+
+    if args.libdir is None or args.gatkdir is None:
+        print 'Need to have both library directory and GATK directory to run!'
+        sys.exit()
+
+    if args.model.lower()=='snp':
+        print 'Calibrating and applying SNP model to %s'%(vcf)
+        recal,tran,rscr = snp_calibrate_model(vcf,args.libdir,args.gatkdir)
+        print 'Finished recalibrating model, run %s for more analysis.  Now  applying model'%(rscr)
+        outputfile=snp_apply_model(vcf,recal,tran,args.libdir,args.gatkdir)
+        print 'Finished applying model, see'+outputfile
+
+    elif  args.model.lower()=='indel':
+        print 'Calibrating and applying INDEL model to %s'%(vcf)
+        recal,tran,rscr = indel_calibrate_model(vcf,args.libdir,args.gatkdir)
+        print 'Finished recalibrating model, run %s for more analysis.  Now applying model'%(rscr)
+        outputfile=indel_apply_model(vcf,recal,tran,args.libdir,args.gatkdir)
+        print 'Finished applying model, see'+outputfile
+
+
+
+            #now for each synapse id, get file and runcode on it!
+#    for si in syn_ids:
+#        so=syn.get(si)
+#        vcf=so.path
+main()

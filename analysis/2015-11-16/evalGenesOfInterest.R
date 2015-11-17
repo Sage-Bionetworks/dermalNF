@@ -16,7 +16,9 @@ names(pats)<-rna.annot$synapseId
 
 library(pheatmap)
 pheatmap(log10(0.00001+rna[order(allvars,decreasing=T)[1:100],]),annotation_col=data.frame(Patient=pats),
-          clustering_distance_cols = 'correlation',clustering_distance_rows = 'correlation',file='RNA_100_mostVariable_min5counts.png')
+         cellwidth=10,cellheight=10,
+          clustering_distance_cols = 'correlation',clustering_distance_rows = 'correlation',
+         file='RNA_100_mostVariable_min5counts.png')
 
 colnames(rna)<-paste(pats,rna.annot$tissueID)
 plot(hclust(dist(t(rna)),method='ward.D2'))
