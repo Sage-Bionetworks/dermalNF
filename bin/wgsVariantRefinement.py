@@ -113,7 +113,7 @@ def snp_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
 
 def snp_apply_model(fn,recalFile,trancheFile,libdir,gatkDir):
     '''
-    This calls the GATK command for indels
+    This calls the GATK command for snps
     '''
 
     output='recalibrated_snps_for_'+os.path.basename(fn)
@@ -147,10 +147,7 @@ def indel_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     '''
     calibrate model for indels now
     '''
-    hapmap=os.path.join(libdir,'hapmap_3.3.hg19.sites.vcf')
-    omni=os.path.join(libdir,'1000G_omni2.5.hg19.sites.vcf')
-    otg=os.path.join(libdir,'1000G_phase1.snps.high_confidence.hg19.sites.vcf')
-    dbsnp=os.path.join(libdir,'dbsnp_138.hg19.vcf')
+    mills=os.path.join(libdir,'Mills_and_1000G_gold_standard.indels.hg19.sites.vcf')
     ref=os.path.join(libdir,'ucsc.hg19.fasta')
 
     base=os.path.basename(fn).split('.')[0]
@@ -163,10 +160,7 @@ def indel_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     -T VariantRecalibrator \
     -R %s \
     -input %s \
-    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %s \
-    -resource:omni,known=false,training=true,truth=true,prior=12.0 %s  \
-    -resource:1000G,known=false,training=true,truth=false,prior=10.0 %s \
-    -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 %s \
+    -resource:mills,known=true,training=true,truth=true,prior=12.0 %s \
     -an DP \
     -an QD \
     -an FS \
@@ -177,7 +171,7 @@ def indel_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
     -recalFile %s \
     -tranchesFile %s \
-    -rscriptFile %s '%(gatk,ref,fn,hapmap,omni,otg,dbsnp,recal,tran,rscr)
+    -rscriptFile %s '%(gatk,ref,fn,mills,recal,tran,rscr)
     if os.path.exists(recal) and os.path.exists(tran):
         print 'Recalibrated files already exist, will not recalculate'
         return recal,tran,rscr
