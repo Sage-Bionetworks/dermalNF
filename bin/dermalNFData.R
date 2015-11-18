@@ -219,7 +219,6 @@ rna_bam_files<-function(){
 
 }
 
-
 ##here are the count files analyzed by featureCounts
 rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
 
@@ -276,6 +275,25 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
 
 }
 
+
+#we can also get the FPKM
+rna_fpkm_matrix<-function(){
+  counts=rna_count_matrix(TRUE,FALSE,0)
+  require(DESeq2)
+  samp=data.frame(SampleID=colnames(counts))
+  library("GenomicFeatures")
+  library('TxDb.Hsapiens.UCSC.hg19.knownGene')
+  gr=transcripts(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  hug<-as.data.frame(fread('../../data/HugoGIDstoEntrez_DAVID.txt'))
+  ecounts<-counts
+  rownames(ecounts)<-hug[match(rownames(counts),hug[,1]),2]
+  ecounts=ecounts[which(!is.na(rownames(ecounts))),]
+  cds<- DESeqDataSetFromMatrix(ecounts,colData=samp,~SampleID)#now collect proteomics data
+  
+  rowRanges(cds)<-gr
+  frag<-fpkm(cds)
+  
+}
 
 #################
 #WGS
