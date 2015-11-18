@@ -27,8 +27,9 @@ syn.login()
 query_res=syn.query("select id, name from entity where entity.parentId=='"+wgs_vcf+"'")
 
 #only get those that are not filtered already
-syn_ids=[s['entity.id'] for s in query_res['results'] if 'hard-filtered' not in s['entity.name']]
 
+syn_ids=[s['entity.id'] for s in query_res['results'] if 'hard-filtered' not in s['entity.name']]
+filtered_syn_ids=[s['entity.id'] for s in query_res['results'] if 'hard-filtered' in s['entity.name']]
 
 
 '''
@@ -252,4 +253,5 @@ def main():
 #    for si in syn_ids:
 #        so=syn.get(si)
 #        vcf=so.path
-main()
+if __name__=='__main__':
+     main()
