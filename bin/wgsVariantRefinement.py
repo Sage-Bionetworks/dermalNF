@@ -220,7 +220,7 @@ def main():
     parser.add_argument('--libDir',dest='libdir',help='Relative path the reference fasta and vcf files')
     parser.add_argument('--gatkDir',dest='gatkdir',help='Relative path to GATK')
     #model type
-    parser.add_argument('--modelType',dest='model',default='snp',help='Either SNP or INDEL, depending on what type of model to calibrate/apply')
+    parser.add_argument('--modelType',dest='model',default='snp',help='Either SNP,INDEL both, depending on what type of model to calibrate/apply')
 
     args=parser.parse_args()
 
@@ -237,14 +237,15 @@ def main():
         print 'Need to have both library directory and GATK directory to run!'
         sys.exit()
 
-    if args.model.lower()=='snp':
+    if args.model.lower()=='snp' or args.model.lower()=='both':
         print 'Calibrating and applying SNP model to %s'%(vcf)
         recal,tran,rscr = snp_calibrate_model(vcf,args.libdir,args.gatkdir)
         print 'Finished recalibrating model, run %s for more analysis.  Now  applying model'%(rscr)
         outputfile=snp_apply_model(vcf,recal,tran,args.libdir,args.gatkdir)
         print 'Finished applying model, see'+outputfile
+        vcf=outputfile
 
-    elif  args.model.lower()=='indel':
+    if args.model.lower()=='indel' or args.model.lower()=='both':
         print 'Calibrating and applying INDEL model to %s'%(vcf)
         recal,tran,rscr = indel_calibrate_model(vcf,args.libdir,args.gatkdir)
         print 'Finished recalibrating model, run %s for more analysis.  Now applying model'%(rscr)
