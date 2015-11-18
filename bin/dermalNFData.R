@@ -220,7 +220,7 @@ rna_bam_files<-function(){
 }
 
 ##here are the count files analyzed by featureCounts
-rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
+rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
 
     if(!stored){
         synq=synapseQuery("select name,id,Patient_ID,Tissue_ID from entity where parentId=='syn4984701'")
@@ -265,10 +265,24 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
       
       sizeFac<-estimateSizeFactors(cds)
       
-      normCounts<-gene.pat.mat/sizeFac@colData$sizeFactor
-      
+      normCounts<-assay(cds)/sizeFac@colData$sizeFactor
+      colnames(normCounts)<-colnames(gene.pat.mat)
       gene.pat.mat<-normCounts
+      
+    }else if(doLogNorm){
+      print("Performing variance stabilizing log2 normalization")
+      require(DESeq2)
+      samp=data.frame(SampleID=colnames(gene.pat.mat))
+      cds<- DESeqDataSetFromMatrix(gene.pat.mat,colData=samp,~SampleID)#now collect proteomics data
+      vstab=rlog(cds)
+      
+      varmat<-assay(vstab)
+      colnames(varmat)<-colnames(gene.pat.mat)
+      gene.pat.mat<-varmat
+      minCount=log2(minCount)  
+      
     }
+    
     sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
     
     return(gene.pat.mat[sel.vals,])
@@ -278,6 +292,7 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
 
 #we can also get the FPKM
 rna_fpkm_matrix<-function(){
+  ##DOES NOT WORK YET....
   counts=rna_count_matrix(TRUE,FALSE,0)
   require(DESeq2)
   samp=data.frame(SampleID=colnames(counts))
@@ -290,8 +305,8 @@ rna_fpkm_matrix<-function(){
   ecounts=ecounts[which(!is.na(rownames(ecounts))),]
   cds<- DESeqDataSetFromMatrix(ecounts,colData=samp,~SampleID)#now collect proteomics data
   
-  rowRanges(cds)<-gr
-  frag<-fpkm(cds)
+ # rowRanges(cds)<-gr
+#  frag<-fpkm(cds)
   
 }
 
