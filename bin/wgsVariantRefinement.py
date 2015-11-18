@@ -103,8 +103,8 @@ def snp_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     -tranchesFile %s \
     -rscriptFile %s '%(gatk,ref,fn,hapmap,omni,otg,dbsnp,recal,tran,rscr)
     if os.path.exists(recal) and os.path.exists(tran):
-	print 'Recalibrated files already exist, will not recalculate'
-	return recal,tran,rscr
+        print 'Recalibrated files already exist, will not recalculate'
+        return recal,tran,rscr
     else:
     	print gatk_command
 
@@ -143,15 +143,73 @@ def snp_apply_model(fn,recalFile,trancheFile,libdir,gatkDir):
 
 '''
 
-def indel_calibrate_model(fn):
+def indel_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     '''
-    calibrate model for indels
+    calibrate model for indels now
+    '''
+    hapmap=os.path.join(libdir,'hapmap_3.3.hg19.sites.vcf')
+    omni=os.path.join(libdir,'1000G_omni2.5.hg19.sites.vcf')
+    otg=os.path.join(libdir,'1000G_phase1.snps.high_confidence.hg19.sites.vcf')
+    dbsnp=os.path.join(libdir,'dbsnp_138.hg19.vcf')
+    ref=os.path.join(libdir,'ucsc.hg19.fasta')
+
+    base=os.path.basename(fn).split('.')[0]
+    tran='recal_INDEL_'+base+'.tranches'
+    recal='recal_INDEL_'+base+'.recal'
+    rscr='recalibrate_INDEL_'+base+'_plots.R'
+    gatk=os.path.join(gatkDir,'GenomeAnalysisTK.jar')
+    #ref=os.path.join(libdir,'human_g1k_v37.fasta')
+    gatk_command='java -jar %s \
+    -T VariantRecalibrator \
+    -R %s \
+    -input %s \
+    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %s \
+    -resource:omni,known=false,training=true,truth=true,prior=12.0 %s  \
+    -resource:1000G,known=false,training=true,truth=false,prior=10.0 %s \
+    -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 %s \
+    -an DP \
+    -an QD \
+    -an FS \
+    -an MQ \
+    -an MQRankSum \
+    -an ReadPosRankSum \
+    -mode INDEL \
+    -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
+    -recalFile %s \
+    -tranchesFile %s \
+    -rscriptFile %s '%(gatk,ref,fn,hapmap,omni,otg,dbsnp,recal,tran,rscr)
+    if os.path.exists(recal) and os.path.exists(tran):
+        print 'Recalibrated files already exist, will not recalculate'
+        return recal,tran,rscr
+    else:
+    	print gatk_command
+
+    	os.system(gatk_command)
+    	return recal,tran,rscr
+
+
+def indel_apply_model(fn,recalFile,trancheFile,libdir,gatkDir):
+    '''
+    This calls the GATK command for indels
     '''
 
-def indel_apply_model(fn):
-    '''
-    apply indel model to data
-    '''
+    output='recalibrated_indels_for_'+os.path.basename(fn)
+    ref=os.path.join(libdir,'ucsc.hg19.fasta')
+    gatk=os.path.join(gatkDir,'GenomeAnalysisTK.jar')
+
+    cmd='java -jar %s \
+    -T ApplyRecalibration \
+    -R %s \
+    -input %s \
+    -mode INDEL \
+    --ts_filter_level 99.0 \
+    -recalFile %s \
+    -tranchesFile %s \
+    -o %s'%(gatk,ref,fn,recalFile,trancheFile,output)
+    print(cmd)
+    os.system(cmd)
+    return output
+
 
 def main():
     parser=argparse.ArgumentParser(description='Run GATK using the command line')
