@@ -102,10 +102,14 @@ def snp_calibrate_model(fn,libdir='../../lib/',gatkDir='../../../'):
     -recalFile %s \
     -tranchesFile %s \
     -rscriptFile %s '%(gatk,ref,fn,hapmap,omni,otg,dbsnp,recal,tran,rscr)
-    print gatk_command
+    if os.path.exists(recal) and os.path.exists(tran):
+	print 'Recalibrated files already exist, will not recalculate'
+	return recal,tran,rscr
+    else:
+    	print gatk_command
 
-    os.system(gatk_command)
-    return recal,tran,rscr
+    	os.system(gatk_command)
+    	return recal,tran,rscr
 
 def snp_apply_model(fn,recalFile,trancheFile,libdir,gatkDir):
     '''
@@ -122,9 +126,9 @@ def snp_apply_model(fn,recalFile,trancheFile,libdir,gatkDir):
     -input %s \
     -mode SNP \
     --ts_filter_level 99.0 \
-    -recalFile recalibrate_SNP.recal \
-    -tranchesFile recalibrate_SNP.tranches \
-    -o %s'%(gark,ref,fn,output)
+    -recalFile %s \
+    -tranchesFile %s \
+    -o %s'%(gatk,ref,fn,recalFile,trancheFile,output)
     print(cmd)
     os.system(cmd)
     return output
