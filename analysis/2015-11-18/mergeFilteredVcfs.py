@@ -11,7 +11,7 @@ synfiles=[wgs.syn.get(si,downloadFile=True).path+'\n' for si in wgs.filtered_syn
 print 'Gzipping files'
 for a in synfiles:
 	if not os.path.exists(a+'.gz'):
-		os.system('gzip '+a)
+		os.system('bgzip '+a)
 
 gzippedfiles=[re.sub('.vcf','.vcf.gz',a) for a in synfiles]
 open('allVcfFiles.txt','w').writelines(gzippedfiles)
