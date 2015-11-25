@@ -248,10 +248,5 @@ def main():
         print 'Finished applying model, see'+outputfile
 
 
-
-            #now for each synapse id, get file and runcode on it!
-#    for si in syn_ids:
-#        so=syn.get(si)
-#        vcf=so.path
 if __name__=='__main__':
      main()

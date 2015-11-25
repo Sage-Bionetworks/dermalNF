@@ -23,7 +23,7 @@ syn_ids=syn_files.keys()
 annotes=[syn.getAnnotations(a) for a in syn_ids]
 
 
-for pat in ['1','2','3','4','5','6','7','8','9','10','11',]:
+for pat in ['1','2','3','4','5','6','7','8','9','10','11']:
 
     p1ids=[a for a in annotes if a['patientID'][0] in ['CT00000'+pat,'CT0000'+pat]]
 
