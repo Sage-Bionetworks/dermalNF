@@ -83,7 +83,7 @@ plotClusteredSegmentData<-function(segdat,byval='gene',metric='median',topGenes=
     dev.off()
 
 
-
+    write.table(M,file=paste(metric,'logRRatioValuesBy',byval,'.txt',sep=''))
     ##Analysis 1: how do top 100 most variable genes cluster?
 
     tm=M[order(allvars,decreasing=T)[1:100],]

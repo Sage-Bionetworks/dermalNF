@@ -84,13 +84,20 @@ cnv_segmented<-function(filterSD=TRUE){
 
 }
 
+cnv_segmented_by_gene<-function(){
+    si=''
+    fn<-synGet(si)
+    tab<-read.table(fn@filePath,header=T)
+    return(tab)
+}
+
 #################
 #PROTEOMICS
 #################
 protein_annotations<-function(){
     annots<-synapseQuery("select name,ID,dataType,tissueID,tissueType,patientID,sampleID from entity where parentId=='syn4984949'")
     annots<-annots[-grep('EMPTY',annots$entity.name),]
-      
+
     colnames(annots)<-c('tissueType','dataType','sampleId','patientId','fileName','tissueId','synapseId')
 
     return(annots)
@@ -126,7 +133,7 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 prot_normalized<-function(store=FALSE,all.expr=TRUE){
   #store indicates we should calculate the values and uplod to synapse, otherwise we can just download pre-computed
   #all.expr means select only those proteins that non-zero in at least one sample
-  
+
   allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
 
 
@@ -190,7 +197,7 @@ prot_normalized<-function(store=FALSE,all.expr=TRUE){
     matfile=synGet('syn5305003')
     expr.ratio.mat<-as.data.frame(fread(matfile@filePath,sep='\t',header=T))
   }
-    
+
   if(all.expr){
     zo=which(apply(expr.ratio.mat[,-1],1,function(x) all(x==0)))
     if(length(zo)>0){
@@ -254,37 +261,37 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
     }else{
         gene.pat.mat<-read.table(synGet('syn5051784')@filePath)
     }
-  
+
     gene.pat.mat<-t(gene.pat.mat)
-  
+
     if(doNorm){
       print('Performing size factor adjustment to samples')
       require(DESeq2)
       samp=data.frame(SampleID=colnames(gene.pat.mat))
       cds<- DESeqDataSetFromMatrix(gene.pat.mat,colData=samp,~SampleID)#now collect proteomics data
-      
+
       sizeFac<-estimateSizeFactors(cds)
-      
+
       normCounts<-assay(cds)/sizeFac@colData$sizeFactor
       colnames(normCounts)<-colnames(gene.pat.mat)
       gene.pat.mat<-normCounts
-      
+
     }else if(doLogNorm){
       print("Performing variance stabilizing log2 normalization")
       require(DESeq2)
       samp=data.frame(SampleID=colnames(gene.pat.mat))
       cds<- DESeqDataSetFromMatrix(gene.pat.mat,colData=samp,~SampleID)#now collect proteomics data
       vstab=rlog(cds)
-      
+
       varmat<-assay(vstab)
       colnames(varmat)<-colnames(gene.pat.mat)
       gene.pat.mat<-varmat
-      minCount=log2(minCount)  
-      
+      minCount=log2(minCount)
+
     }
-    
+
     sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
-    
+
     return(gene.pat.mat[sel.vals,])
 
 }
@@ -304,10 +311,10 @@ rna_fpkm_matrix<-function(){
   rownames(ecounts)<-hug[match(rownames(counts),hug[,1]),2]
   ecounts=ecounts[which(!is.na(rownames(ecounts))),]
   cds<- DESeqDataSetFromMatrix(ecounts,colData=samp,~SampleID)#now collect proteomics data
-  
+
  # rowRanges(cds)<-gr
 #  frag<-fpkm(cds)
-  
+
 }
 
 #################
