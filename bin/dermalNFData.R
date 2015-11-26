@@ -85,7 +85,7 @@ cnv_segmented<-function(filterSD=TRUE){
 }
 
 cnv_segmented_by_gene<-function(){
-    si=''
+    si='syn5462050'
     fn<-synGet(si)
     tab<-read.table(fn@filePath,header=T)
     return(tab)
