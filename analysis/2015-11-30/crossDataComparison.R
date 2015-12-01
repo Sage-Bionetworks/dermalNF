@@ -1,5 +1,5 @@
 ###compare RNAseq data to CNV/proteomics data
-
+##this is primarily a test file for the data mapping file...
 source('../../bin/dermalNFData.R')
 
 #mapped to gene
@@ -82,3 +82,5 @@ projectId='syn4984604'
 schema<-TableSchema(name='Dermal NF Data Summary',parent=projectId,columns=cols)
 table<-Table(schema,fileId)
 table<-synStore(table,retrieveData=TRUE)
+
+##now select patient samples
