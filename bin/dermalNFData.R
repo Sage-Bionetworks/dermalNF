@@ -14,9 +14,9 @@ require(parallel)
 #################
 
 cnv_annotations<-function(){
-    snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
+    snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID,alternateTumorID FROM entity where parentId=="syn5004874"')
 
-    names(snpfiles)<-c('tissueType','patientID','File','tissueID','synapseID')
+    names(snpfiles)<-c('tissueType','patientID','alternateTumorID','File','tissueID','synapseID')
     return(snpfiles)
 }
 
@@ -222,8 +222,11 @@ rna_annotations<-function(){
     return(synq)
 }
 
-rna_bam_files<-function(){
-
+rna_bam_annotations<-function(){
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn4984620'")
+    colnames(synq)<-c('patientID','alternateTumorID','fileName','tissueID','synapseID')
+    synq=synq[grep('.bam$',synq$fileName),]
+    return(synq)
 }
 
 ##here are the count files analyzed by featureCounts
@@ -321,5 +324,8 @@ rna_fpkm_matrix<-function(){
 #WGS
 #################
 wgs_annotations<-function(){
-
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn4984931'")
+    colnames(synq)<-c('patientID','alternateTumorID','fileName','tissueID','synapseId')
+    synq=synq[-grep('hard-filtered',synq$fileName),]
+    return(synq)
 }
