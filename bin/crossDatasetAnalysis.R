@@ -2,30 +2,40 @@
 
 source("../../bin/crossDataMapping.R")
 
-#just retrieve data once
-alldat<-getPatientMapping()
+if(!exists("alldat")){
+                                        #just retrieve data once
+    alldat<-getPatientMapping()
+}
 
-#mapped to gene
-rna_counts=rna_count_matrix(doLogNorm=TRUE,minCount=2)
+if(!exists('rna_counts')){
+                                        #mapped to gene
+    rna_counts=rna_count_matrix(doLogNorm=TRUE,minCount=2)
+}
 
-#mapped to gene
-proteomics=prot_normalized()
+if(!exists('proteomics')){
+                                        #mapped to gene
+    proteomics=prot_normalized()
+}
 
-#cnv mapped to gene
-cnv<-cnv_segmented_by_gene()
+
+if(!exists('cnv')){
+                                        #cnv mapped to gene
+    cnv<-cnv_segmented_by_gene()
+}
+
 
 library(ggplot2)
 
-mrna_prot_comp<-function(){
-      
+##function that retrieves matched mRNA and protein levels across common patient and genes
+matchMrnaProt<-function(){
     ##first get samples for which there are matched RNA and protein
   over=intersect(which(!is.na(alldat$RNASeq)),which(!is.na(alldat$Prot)))
   over.samps<-alldat[over,]
   print(paste('Found',length(over),'samples with RNASeq and Proteomics data with',length(unique(over.samps$patient)),'patients'))
-  
+
   gene.over<-intersect(rownames(rna_counts),proteomics$Protein)
   print(paste("Found",length(gene.over),'genes that are in both datasets'))
-  
+
   allcors=c()
   allpats<-c()
   rmat<-NULL
@@ -38,41 +48,54 @@ mrna_prot_comp<-function(){
     rmat<-rbind(rmat,rvals)
     pmat<-rbind(pmat,pvals)
     allpats<-c(allpats,sampname)
-  
+
   }
   colnames(rmat)<-colnames(pmat)<-gene.over
   rownames(rmat)<-rownames(pmat)<-allpats
-  
-  #get patient Cors
-  patientCors<-sapply(allpats,function(x) cor(rmat[x,],pmat[x,],method='spearman'))  
-  
-  #get RNA cors
-  geneCors<-sapply(gene.over,function(x) cor(rmat[,x],pmat[,x],method='spearman'))  
-  
-    png('mrnaProtPatientCorrelations.png')
-  res<-ggplot(data.frame(SpearmanCorrelation=patientCors)) + geom_histogram(aes(SpearmanCorrelation),binwidth=0.05) + labs(title=paste('Spearman Correlation of',nrow(over.samps),'samples\nWith mRNA and Proteomics Data'))
-  print(res)
-  dev.off()
-  
-  ##now let's figure out which mRNA/prots are correlated? 
-  png('mrnaProtGeneCorrelations.png')
-  res<-ggplot(data.frame(SpearmanCorrelation=geneCors)) + geom_histogram(aes(SpearmanCorrelation),binwidth=0.05) + labs(title=paste('Spearman Correlation of',length(gene.over),'genes\nWith mRNA and Proteomics Data'))
-  print(res)
-  dev.off()
   return(list(rna=rmat,prot=pmat))
+
+}
+
+#compute spearman rank correlation of patients and genes
+mrna_prot_comp<-function(doPlot=TRUE){
+
+    dat.mat<-matchMrnaProt()
+    rmat=dat.mat$rna
+    pmat=dat.mat$prot
+    allpats<-rownames(rmat)
+    gene.over<-colnames(rmat)
+                                        #get patient Cors
+    patientCors<-sapply(allpats,function(x) cor(rmat[x,],pmat[x,],method='spearman'))
+
+                                        #get RNA cors
+    geneCors<-sapply(gene.over,function(x) cor(rmat[,x],pmat[,x],method='spearman'))
+
+    if(doPlot){
+        png('mrnaProtPatientCorrelations.png')
+        res<-ggplot(data.frame(SpearmanCorrelation=patientCors)) + geom_histogram(aes(SpearmanCorrelation),binwidth=0.05) + labs(title=paste('Spearman Correlation of',nrow(over.samps),'samples\nWith mRNA and Proteomics Data'))
+        print(res)
+        dev.off()
+
+        ##now let's figure out which mRNA/prots are correlated?
+        png('mrnaProtGeneCorrelations.png')
+        res<-ggplot(data.frame(SpearmanCorrelation=geneCors)) + geom_histogram(aes(SpearmanCorrelation),binwidth=0.05) + labs(title=paste('Spearman Correlation of',length(gene.over),'genes\nWith mRNA and Proteomics Data'))
+        print(res)
+        dev.off()
+    }
+    return(list(geneCorrelation=geneCors,patientCorrelation=patientCors))
 }
 
 
-mrna_cnv_comp<-function(){
-  
+#retrieve matched mRNA and CNV logR ratio for genes and patients that are in common
+matchMrnaCnv<-function(){
   ##first get samples for which there are matched RNA and protein
   over=intersect(which(!is.na(alldat$RNASeq)),which(!is.na(alldat$CNV)))
   over.samps<-alldat[over,]
   print(paste('Found',length(over),'samples with RNASeq and Proteomics data with',length(unique(over.samps$patient)),'patients'))
-  
+
   gene.over<-intersect(rownames(rna_counts),rownames(cnv))
   print(paste("Found",length(gene.over),'genes that are in both datasets'))
-  
+
   allcors=c()
   allpats<-c()
   rmat<-NULL
@@ -88,22 +111,61 @@ mrna_cnv_comp<-function(){
   }
   colnames(rmat)<-colnames(pmat)<-gene.over
   rownames(rmat)<-rownames(pmat)<-allpats
-  #get patient Cors
-  patientCors<-sapply(allpats,function(x) cor(rmat[x,],pmat[x,],method='spearman'))  
-  
-  #get RNA cors
-  geneCors<-sapply(gene.over,function(x) cor(rmat[,x],pmat[,x],method='spearman'))  
-  
-  #names(allcors)<-allpats
-  png('mrnaCNVPatientCorrelations.png')
-  res<-ggplot(data.frame(SpearmanCorrelation=patientCors)) + geom_histogram(aes(SpearmanCorrelation)) + labs(title=paste('Spearman Correlation of',nrow(over.samps),'samples\nWith mRNA and CNV Data'))
-  print(res)
-  dev.off()
-  
-  png('mrnaCNVGeneCorrelations.png')
-  res<-ggplot(data.frame(SpearmanCorrelation=geneCors)) + geom_histogram(aes(SpearmanCorrelation),binwidth=0.05) + labs(title=paste('Spearman Correlation of',length(gene.over),'genes\nWith mRNA and CNV Data'))
-  print(res)
-  dev.off()
+
   return(list(rna=rmat,cnv=pmat))
-  
+}
+
+#compute spearman correlation
+mrna_cnv_comp<-function(doPlot=TRUE){
+    dat.mat<-matchMrnaCnv()
+    rmat=dat.mat$rna
+    pmat=dat.mat$cnv
+    allpats<-rownames(rmat)
+    gene.over<-colnames(rmat)
+
+  #get patient Cors
+  patientCors<-sapply(allpats,function(x) cor(rmat[x,],pmat[x,],method='spearman'))
+
+  #get RNA cors
+  geneCors<-sapply(gene.over,function(x) cor(rmat[,x],pmat[,x],method='spearman'))
+
+    if(doPlot){
+                                        #names(allcors)<-allpats
+        png('mrnaCNVPatientCorrelations.png')
+        res<-ggplot(data.frame(SpearmanCorrelation=patientCors)) + geom_histogram(aes(SpearmanCorrelation)) + labs(title=paste('Spearman Correlation of',nrow(over.samps),'samples\nWith mRNA and CNV Data'))
+        print(res)
+        dev.off()
+
+        png('mrnaCNVGeneCorrelations.png')
+        res<-ggplot(data.frame(SpearmanCorrelation=geneCors)) + geom_histogram(aes(SpearmanCorrelation),binwidth=0.05) + labs(title=paste('Spearman Correlation of',length(gene.over),'genes\nWith mRNA and CNV Data'))
+        print(res)
+        dev.off()
+    }
+
+
+    return(list(geneCorrelation=geneCors,patientCorrelation=patientCors))
+
+}
+
+
+getMatchedDistributions<-function(mat1,mat2,numiter=100,method='spearman'){
+    ##collect two matrices, permute, then compute row and column correlations,
+    patientCors<-c()##how well to random patient samples correlate
+    geneCors<-c() ##how well to random genes correlate?
+
+    for(i in 1:numiter){
+                                        #first permute rows
+        rowcors=sapply(sample(rownames(mat1)),function(m1){
+            sapply(sample(rownames(mat2)),function(m2){
+                cor(mat1[m1,],mat2[m2,],method=method)})})
+
+        colcors<-sapply(sample(colnames(mat1)),function(m1){
+            sapply(sample(colnames(mat2)),function(m2){
+                cor(mat1[,m1],mat2[,m2],method=method)})})
+        patientCors<-c(patientCors,rowcors)
+        geneCors<-c(geneCors,colcors)
+    }
+
+    return(list(patientCors=patientCors,geneCors=geneCors))
+
 }
