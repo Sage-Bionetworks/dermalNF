@@ -153,18 +153,23 @@ getMatchedDistributions<-function(mat1,mat2,numiter=100,method='spearman'){
     patientCors<-c()##how well to random patient samples correlate
     geneCors<-c() ##how well to random genes correlate?
 
-    for(i in 1:numiter){
-                                        #first permute rows
-        rowcors=sapply(sample(rownames(mat1)),function(m1){
-            sapply(sample(rownames(mat2)),function(m2){
-                cor(mat1[m1,],mat2[m2,],method=method)})})
+    patientCors<-sapply(1:100,function(x) cor(mat1[sample(rownames(mat1),1),],mat2[sample(rownames(mat2),1),],method=method))
+    geneCors<-sapply(1:100,function(x) cor(mat1[,sample(colnames(mat1),1)],mat2[,sample(colnames(mat2),1)],method=method))
 
-        colcors<-sapply(sample(colnames(mat1)),function(m1){
-            sapply(sample(colnames(mat2)),function(m2){
-                cor(mat1[,m1],mat2[,m2],method=method)})})
-        patientCors<-c(patientCors,rowcors)
-        geneCors<-c(geneCors,colcors)
-    }
+    ## for(i in 1:numiter){
+    ##                                     #first permute rows
+    ##     rowcors=sapply(sample(rownames(mat1),1),function(m1){
+    ##         sapply(sample(rownames(mat2),1),function(m2){
+    ##             print(paste(m1,'vs',m2))
+    ##             cor(mat1[m1,],mat2[m2,],method=method)})})
+
+    ##     colcors<-sapply(sample(colnames(mat1),1),function(m1){
+    ##         sapply(sample(colnames(mat2),1),function(m2){
+    ##             print(paste(m1,'vs',m2))
+    ##             cor(mat1[,m1],mat2[,m2],method=method)})})
+    ##     patientCors<-c(patientCors,rowcors)
+    ##     geneCors<-c(geneCors,colcors)
+    ## }
 
     return(list(patientCors=patientCors,geneCors=geneCors))
 
