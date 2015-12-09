@@ -216,7 +216,7 @@ prot_normalized<-function(store=FALSE,all.expr=TRUE){
 #RNA
 #################
 rna_annotations<-function(){
-    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn4984701'")
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn5493036'")
     colnames(synq)<-c('patientId','alternateTumorId','fileName','tissueId','synapseId')
     synq=synq[grep('_featureCounts.txt',synq$fileName),]
     return(synq)
@@ -233,7 +233,7 @@ rna_bam_annotations<-function(){
 rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
 
     if(!stored){
-        synq=synapseQuery("select name,id,patientID,tissueID from entity where parentId=='syn4984701'")
+        synq=synapseQuery("select name,id,patientID,tissueID from entity where parentId=='syn5493036'")
         synq<-synq[grep("accepted_hits",synq$entity.name),]
         synfiles<-sapply(synq$entity.id,synGet)
                                         #now read in alfilel values
