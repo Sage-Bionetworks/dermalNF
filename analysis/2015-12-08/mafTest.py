@@ -41,6 +41,11 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
     for t in tumor:
         tumfile=re.sub('.vcf','',syn_files[t])
         print t,blood[0]
+        ##first create vcf file with only two samples
+        bcftoolscmd=''
+        #then create a symlink from that file to a 'ghost' .vcf file
+
+        #then run vcf2maf on that subset
         cmd=vcf2maf+" --input-vcf ../2015-12-02/recalibrated_indels_for_recalibrated_snps_for_dermalNFall.vcf --tumor-id %s --normal-id %s --output-maf tumorVsNormal_pat%s_%s.maf \
         --vcf-tumor-id %s --vep-forks 8 --species homo_sapiens \
         --vcf-normal-id %s --ref-fasta %s"%(tumfile,bloodfile,pat,t,tumfile,bloodfile,reffasta)

@@ -91,7 +91,7 @@ matchMrnaCnv<-function(){
   ##first get samples for which there are matched RNA and protein
   over=intersect(which(!is.na(alldat$RNASeq)),which(!is.na(alldat$CNV)))
   over.samps<-alldat[over,]
-  print(paste('Found',length(over),'samples with RNASeq and Proteomics data with',length(unique(over.samps$patient)),'patients'))
+  print(paste('Found',length(over),'samples with RNASeq and CNV data with',length(unique(over.samps$patient)),'patients'))
 
   gene.over<-intersect(rownames(rna_counts),rownames(cnv))
   print(paste("Found",length(gene.over),'genes that are in both datasets'))
@@ -153,8 +153,12 @@ getMatchedDistributions<-function(mat1,mat2,numiter=100,method='spearman'){
     patientCors<-c()##how well to random patient samples correlate
     geneCors<-c() ##how well to random genes correlate?
 
-    patientCors<-sapply(1:100,function(x) cor(mat1[sample(rownames(mat1),1),],mat2[sample(rownames(mat2),1),],method=method))
-    geneCors<-sapply(1:100,function(x) cor(mat1[,sample(colnames(mat1),1)],mat2[,sample(colnames(mat2),1)],method=method))
+    if(numiter>nrow(mat1)*nrow(mat2))
+        print("Number of samples is greater than possible combinations, might be over-sampling samples")
+    patientCors<-sapply(1:numiter,function(x) cor(mat1[sample(rownames(mat1),1),],mat2[sample(rownames(mat2),1),],method=method))
+    if(numiter>ncol(mat1)*ncol(mat2))
+        print("Number of samples is greater than possible combinations, might be over-sampling genes")
+    geneCors<-sapply(1:numiter,function(x) cor(mat1[,sample(colnames(mat1),1)],mat2[,sample(colnames(mat2),1)],method=method))
 
     ## for(i in 1:numiter){
     ##                                     #first permute rows
