@@ -16,6 +16,11 @@ syn_files=dict([(res['entity.id'],res['entity.name']) for res in \
 syn_ids=syn_files.keys()
 #print syn_files
 
+uf=syn_ids+['https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/wgsVariantRefinement.py']
+#lastly, add in GATK processing file
+gafile=synapseclient.entity.File('../2015-11-20/recalibrated_indels_for_recalibrated_snps_for_dermalNFall.vcf.gz',parentId='syn5522790',used=uf)
+syn.store(gafile)
+
 npid='syn5522788'
 for sy in syn_ids:
     sf=syn.get(sy,downloadFile=False)

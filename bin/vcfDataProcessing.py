@@ -8,15 +8,15 @@ vcf2maf='perl ../../../vcf2maf-master/vcf2maf.pl'
 ##REFERENCE FASTA installation
 reffasta='../../lib/ucsc.hg19.fasta'
 ##OUTPUT FROM GATK:
-vcffile='recalibrated_indels_for_recalibrated_snps_for_dermalNFall.vcf.gz'
+
+
 
 import synapseclient,re,os
 syn = synapseclient.Synapse()
 syn.login()
 
-#first store merged GATK file
-sf=synapseclient.entity.File(vcffile,parentId='syn5522790')
-syn.store(sf)
+vcf_file='syn5526663'#syn.get('').path
+
 
 ##get all the VCF annotations so that we can process the merged file
 wgs_vcf='syn5522788'
@@ -47,38 +47,51 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
 
     for t in tumor:
         tumfile=re.sub('.vcf','',syn_files[t])
-        tumfile_annotations=syn.get(t,downloadFile=F).annotations
-        print t,blood[0]
+        tumfile_annotations=syn.get(t,downloadFile=False).annotations
         if(bloodfile==''):
-            print "Missing normal for patient %s, running without"%s(pat)
+            print "Missing normal for patient %s, running without"%(pat)
             sstring=tumfile
         else:
+            print t,blood[0]
             sstring=','.join([tumfile,bloodfile])
         cmfile='patient_'+pat+'_'+tumfile+'_'+bloodfile+'_commands.sh'
         patsh=open(cmfile,'w')
         ##first create vcf file with only two samples
-        bcftoolscmd="bcftools view %s -s %s -U"%(vcffile,sstring)
+        bcftoolscmd="bcftools view %s -s %s -U"%(vcf_file,sstring)
         if(bloodfile==''):
             outvcf="patient%s_tumor_%s_only.vcf"%(pat,t)
+            outmaf="tumorVsNormal_pat%s_tumor_%s_only.maf"%(pat,t)
         else:
             outvcf="patient%s_tumor_%s_vs_norm_%s.vcf"%(pat,t,blood[0])
-
+            outmaf="tumorVsNormal_pat%s_tumor_%s_vs_norm_%s.maf"%(pat,t,blood[0])
+        patsh.write(bcftoolscmd+'>'+outvcf+'\n\n')
         #then run vcf2maf on that subset
-        outmaf="tumorVsNormal_pat%s_%s.maf"
-        vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-tumor-id %s --vcf-normal-id %s --output-maf %s \
-         --vep-forks 2 --species homo_sapiens --ref-fasta %s"%(outvcf,tumfile,bloodfile,outmaf,reffasta)
 
-        #then these file should be uploaded to synapse
-        #create new annotation string
+                #create new annotation string
         #activity string?
-        annotationstr="{\"dataType\":\"WGS\"},{\"tissueType\":\"tumorVsNormal\"},{\"patientId\":\""+tumfile_annotations['patientID']+"\"}"
-        annotationstr=annotationstr+",{\"tissueID\":\""+tumfile_annotations['tissueID']+"\"}"
-        usedstr=','.join([t,blood[0]])
+        annotationstr="{\"dataType\":\"WGS\"},{\"tissueType\":\"tumorVsNormal\"},{\"patientId\":\""+tumfile_annotations['patientID'][0]+"\"}"
+        annotationstr=annotationstr+",{\"tissueID\":\""+tumfile_annotations['tissueID'][0]+"\"}"
+        if bloodfile=='':
+            usedstr=t
+        else:
+            usedstr=','.join([t,blood[0]])
 
+
+        ##now store paired VCF
         synapse_upload_vcf="synapse store "+outvcf+" --parentId=syn5522791 --annotations "+annotationstr+' --used '+usedstr
+        patsh.write(synapse_upload_vcf+'\n\n')
+
+
+        vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-tumor-id %s --vcf-normal-id %s --output-maf %s \
+         --vep-forks 16 --species homo_sapiens --ref-fasta %s"%(outvcf,tumfile,bloodfile,outmaf,reffasta)
+
+        patsh.write(vcf2maf_cmd+'\n\n')
+        #then these file should be uploaded to synapse
 
         synapse_upload_maf="synapse store "+outmaf+" --parentId=syn5522808 --annotations "+annotationstr+' --used '+usedstr
-        patsh.write(bcftoolscmd+'>'outvcf+'\n'vcf2maf_cmd+'\n')
+        patsh.write(synapse_upload_maf+'\n')
+
+        #patsh.write(bcftoolscmd+'>'+outvcf+'\n'+vcf2maf_cmd+'\n')
         #os.system(cmd)
         patsh.close()
     #os.system('sh '+cmfile+' &')
