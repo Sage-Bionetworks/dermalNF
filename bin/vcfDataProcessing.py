@@ -15,7 +15,7 @@ import synapseclient,re,os
 syn = synapseclient.Synapse()
 syn.login()
 
-vcf_file='syn5526663'#syn.get('').path
+vcf_file=syn.get('syn5526663').path
 
 
 ##get all the VCF annotations so that we can process the merged file
@@ -64,24 +64,25 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
         else:
             outvcf="patient%s_tumor_%s_vs_norm_%s.vcf"%(pat,t,blood[0])
             outmaf="tumorVsNormal_pat%s_tumor_%s_vs_norm_%s.maf"%(pat,t,blood[0])
-        patsh.write(bcftoolscmd+'>'+outvcf+'\n\n')
+        patsh.write(bcftoolscmd+'>'+outvcf+'\nbgzip '+outvcf+'\n')
         #then run vcf2maf on that subset
 
                 #create new annotation string
         #activity string?
-        annotationstr="{\"dataType\":\"WGS\"},{\"tissueType\":\"tumorVsNormal\"},{\"patientId\":\""+tumfile_annotations['patientID'][0]+"\"}"
-        annotationstr=annotationstr+",{\"tissueID\":\""+tumfile_annotations['tissueID'][0]+"\"}"
-        if bloodfile=='':
-            usedstr=t
-        else:
-            usedstr=','.join([t,blood[0]])
-
+        annotationstr="'{\"dataType\":\"WGS\",\"tissueType\":\"tumorVsNormal\",\"patientId\":\""+tumfile_annotations['patientID'][0]+"\""
+        annotationstr=annotationstr+",\"tissueID\":\""+tumfile_annotations['tissueID'][0]+"\"}'"
+	
+	if bloodfile=='':
+	    usedstr="'{"+t+"}'"
+	else:
+	    usedstr="'{"+t+","+blood[0]+"}'"
 
         ##now store paired VCF
-        synapse_upload_vcf="synapse store "+outvcf+" --parentId=syn5522791 --annotations "+annotationstr+' --used '+usedstr
+        synapse_upload_vcf="synapse store "+outvcf+".gz --parentId=syn5522791 --annotations "+annotationstr+' --used '+usedstr
+
         patsh.write(synapse_upload_vcf+'\n\n')
 
-
+	patsh.write('bgzip -d '+outvcf+'.gz\n\n')
         vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-tumor-id %s --vcf-normal-id %s --output-maf %s \
          --vep-forks 16 --species homo_sapiens --ref-fasta %s"%(outvcf,tumfile,bloodfile,outmaf,reffasta)
 
