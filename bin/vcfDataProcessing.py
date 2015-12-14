@@ -86,10 +86,10 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
         vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-tumor-id %s --vcf-normal-id %s --output-maf %s \
          --vep-forks 16 --species homo_sapiens --ref-fasta %s"%(outvcf,tumfile,bloodfile,outmaf,reffasta)
 
-        patsh.write(vcf2maf_cmd+'\n\n')
+        patsh.write(vcf2maf_cmd+'\ngzip '+outmaf+'\n')
         #then these file should be uploaded to synapse
 
-        synapse_upload_maf="synapse store "+outmaf+" --parentId=syn5522808 --annotations "+annotationstr#+' --used '+usedstr
+        synapse_upload_maf="synapse store "+outmaf+".gz --parentId=syn5522808 --annotations "+annotationstr#+' --used '+usedstr
         patsh.write(synapse_upload_maf+'\n')
 
         #patsh.write(bcftoolscmd+'>'+outvcf+'\n'+vcf2maf_cmd+'\n')
