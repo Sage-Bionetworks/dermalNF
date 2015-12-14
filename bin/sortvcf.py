@@ -17,8 +17,8 @@ def sortGATKVCF(vcfFile, faiFile='/home/tyu/reference/GATK/ucsc.hg19.fasta.fai',
 	vcf_reader = vcf.Reader(filename=vcfFile)
 	vcf_writer = vcf.Writer(open(sortedvcf, 'w'), vcf_reader)
 	for record in vcf_reader:
-		#if record.REF not in record.ALT:
-		vcf_writer.write_record(record)
+		if record.REF not in record.ALT:
+			vcf_writer.write_record(record)
 	os.remove(tempFile)
 	return(sortedvcf)
 
