@@ -15,7 +15,7 @@ import synapseclient,re,os
 syn = synapseclient.Synapse()
 syn.login()
 
-vcf_file=syn.get('syn5526663').path
+vcf_file=syn.get('syn5555584').path
 
 
 ##get all the VCF annotations so that we can process the merged file
