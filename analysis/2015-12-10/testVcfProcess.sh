@@ -1,0 +1,2 @@
+python ../../bin/vcfDataProcessing.py
+
