@@ -15,7 +15,7 @@ import synapseclient,re,os
 syn = synapseclient.Synapse()
 syn.login()
 
-vcf_file=syn.get('syn5526663').path
+vcf_file=syn.get('syn5555584').path
 
 
 ##get all the VCF annotations so that we can process the merged file
@@ -71,6 +71,8 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
         #activity string?
         annotationstr="'{\"dataType\":\"WGS\",\"tissueType\":\"tumorVsNormal\",\"patientId\":\""+tumfile_annotations['patientID'][0]+"\""
         annotationstr=annotationstr+",\"tissueID\":\""+tumfile_annotations['tissueID'][0]+"\"}'"
+	
+
 
 #	if bloodfile=='':
 #	    usedstr="'{"+t+"}'"
@@ -86,7 +88,7 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
         vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-tumor-id %s"%(outvcf,tumfile)
         if bloodfile!='':
             vcf2maf_cmd+=' --vcf-normal-id '+bloodfile
-        vcf2maf_cmd+=" --output-maf %s --vep-forks 16 --species homo_sapiens --ref-fasta %s"%(outmaf,reffasta)
+        vcf2maf_cmd+=" --output-maf %s --vep-forks 1 --species homo_sapiens --ref-fasta %s"%(outmaf,reffasta)
 
         patsh.write(vcf2maf_cmd+'\ngzip '+outmaf+'\n')
         #then these file should be uploaded to synapse
