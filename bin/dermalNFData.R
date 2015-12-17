@@ -32,15 +32,40 @@ names(clnames)<-names(patients)
 tissueType=cnv.dat$tissueType
 names(tissueType)<-names(patients)
 
+
 #SNP annotation file
+snp_annotation_file<-function(){
+  ##need to downlod and read in large annotation file as well
+  print("Retrieving OMNI Array SNP annotation data from Synapse...")
+  anndata<-synGet('syn5297573')
+  return(anndata@filePath)
+}
+
 snp_annotation_data<-function(){
-    ##need to downlod and read in large annotation file as well
-    print("Retrieving OMNI Array SNP annotation data from Synapse...")
-    anndata<-synGet('syn5297573')
-    annot <- as.data.frame(fread(anndata@filePath,sep=",",header=T))
+  fp=snp_annotation_file()
+    annot <- as.data.frame(fread(fp,sep=",",header=T))
     return(annot)
 }
 
+cnv_unprocessed_files<-function(){
+  
+  snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
+  snpfiles<-snpfiles[grep("Final.csv",snpfiles$entity.name),]
+  snp.sample.names<-sapply(snpfiles$entity.name,function(x) gsub('_Final.csv','',unlist(strsplit(x,split='-'))[3]))
+  snp.patients<-snpfiles$entity.patientID
+  names(snp.patients)<-snp.sample.names
+  
+  snp.tissue<-snpfiles$entity.tissueID
+  names(snp.tissue)<-snp.sample.names
+  
+    sample.data<-lapply(snpfiles$entity.id,function(synid){
+    print(paste("Getting sample",snpfiles$entity.name[match(synid,snpfiles$entity.id)]))
+    fname=synGet(synid)
+    return(fname@filePath)
+  })
+    names(sample.data)<-snpfiles$entity.id
+    return(sample.data)
+}
 
 #this function gets the original files from the OMNI arrays
 cnv_unprocessed<-function(annot=NA){
@@ -324,8 +349,8 @@ rna_fpkm_matrix<-function(){
 #WGS
 #################
 wgs_annotations<-function(){
-    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn4984931'")
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn5522788'")
     colnames(synq)<-c('patientId','alternateTumorId','fileName','tissueId','synapseId')
-    synq=synq[-grep('hard-filtered',synq$fileName),]
+   # synq=synq[-grep('hard-filtered',synq$fileName),]
     return(synq)
 }
