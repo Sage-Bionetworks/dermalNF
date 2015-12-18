@@ -34,6 +34,7 @@ def getBamPath(synid):
 allpats=['1','2','3','4','5','6','7','8','9','10','11','12','13']
 for p in allpats:
     res=syn.tableQuery("SELECT DnaID,WGS FROM syn5556216 where Patient=%s"%(p))
+    df=res.asDataFrame()
     normind=[df['WGS'][ind] for ind,a in enumerate(df['DnaID']) if a=='PBMC']
     if len(normind)==0:
         print 'No normal file found for patient '+p
