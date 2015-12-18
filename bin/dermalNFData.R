@@ -86,13 +86,13 @@ cnv_unprocessed<-function(annot=NA){
 
     print('Now retreiving original CNV data from Dermal NF OMNI arrays...')
     #here get the sample data from snp files
-    sample.data<-mclapply(snpfiles$entity.id,function(synid){
+    sample.data<-lapply(snpfiles$entity.id,function(synid){
         print(paste("Getting sample",snpfiles$entity.name[match(synid,snpfiles$entity.id)]))
         fname=synGet(synid)
         data <- as.data.frame(fread(fname@filePath,sep=",",header=T))
         ad<-data[match(annot$Name,data$'SNP.Name'),]
         return(ad)
-    },mc.cores=6)
+    })
     names(sample.data)<-snpfiles$entity.id
     return(sample.data)
 }

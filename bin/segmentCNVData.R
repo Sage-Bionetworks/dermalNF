@@ -35,7 +35,7 @@ chr17.snps=chr17.snps[intersect(which(pos>29000019),which(pos<30427403)),]
 
 
 #remove x/y here
-is.autosome <- as.character(annot$chr) %in% as.character(1:22)
+is.autosome <- as.character(annot$Chr) %in% as.character(1:22)
 #map lrr and bafs for each
 lrr <- do.call("cbind", lapply(sample.data, function(x) x$"Log.R.Ratio"))
 baf <- do.call("cbind", lapply(sample.data, function(x) x$"B.Allele.Freq"))
@@ -172,42 +172,3 @@ synStore(sf,used=list(list(name='segmentCNVData.R',
                 list(entity='syn5005069',wasExecuted=FALSE)),
          activityName='Segmentation analysis of copy number alterations')
 
-## segdata <- segment.smoothed.cna$output
-## segdata2 <- segment.smoothed.cna.sundo$output
-
-## regions<-intersect(which(segdata2$loc.start>29000019),intersect(which(segdata2$loc.end<30427403),which(segdata2$chrom==17)))
-## regdata<-segdata2[regions,]
-
-## plot(segment.smoothed.cna.sundo, plot.type="s",ylim=c(-2,2),xmaploc=TRUE)
-## byChr <- subset(segment.smoothed.cna.sundo,chromlist=c("17"))
-## pdf("~/foo.pdf",width=8,height=6)
-## plot(byChr,plot.type="s",xmaploc=TRUE)
-## dev.off()
-
-## pdf("foo.pdf",width=10,height=8)
-## for(i in 1:22){
-##   byChr <- subset(segment.smoothed.cna.sundo,chromlist=c(as.character(i)))
-##   plot(density(byChr$output$seg.mean),main=i)
-## }
-## dev.off()
-
-#tmp <- subset(segment.smoothed.cna,samplelist=c("Sample.10"))
-#plot(tmp,plot.type="w")
-
-########################################
-
-## # cluster analysis
-## cnseg <- CNSeg(regdata)
-## rdseg <- getRS(cnseg, by = "region", imput = FALSE, XY = FALSE, what = "mean")
-## segM <- rs(rdseg)
-
-## M <- t(do.call("rbind", lapply(4:ncol(segM), function(i) as.numeric(as.character(segM[,i])))))
-
-## idxs <- match(colnames(segM)[-1:-3], names(sample.data))
-## colnames(M) <- clnames[idxs]
-
-## plot(hclust(dist(t(M)),method="ward.D2"))
-
-## dissimilarity <- 1 - cor(M)
-## distance <- as.dist(dissimilarity)
-## plot(hclust(distance,method="ward.D2"))
