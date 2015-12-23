@@ -12,20 +12,20 @@ proteomics=prot_normalized()
 #cnv=cnv_segmented()
 
 ##first let's calculate and upload matrix file
-source("../../bin/clusterCNVBySample.R")
-main()
+#UNCOMMENT TO RUNsource("../../bin/clusterCNVBySample.R")
+#UNCOMMENT TO RUNmain()
 
 filename='medianlogRRatioValuesBygene.txt'
 sf=File(filename,parentId='syn5049702')
 #act=Activity(name='built matrix of median segments by gene and region',description='main() method from clusterCNVBySample.R')
 used(sf)<-list(list(name='crossDataComparison.R',url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2015-11-25/crossDataComparison.R'),synGet('syn5049753'))
-synStore(sf,activityName='built matrix of median segments by gene')
+#UNCOMMENT TO RUN synStore(sf,activityName='built matrix of median segments by gene')
 
 filename='medianlogRRatioValuesByregion.txt'
 sf=File(filename,parentId='syn5049702')
 #act=Activity(name='built matrix of median segments by gene and region',description='main() method from clusterCNVBySample.R')
 used(sf)<-list(list(name='crossDataComparison.R',url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2015-11-25/crossDataComparison.R'),synGet('syn5049753'))
-synStore(sf,activityName='built matrix of median segments by region')
+#UNCOMMENT TO RUNsynStore(sf,activityName='built matrix of median segments by region')
 
 ##now we can use the snp data per gene using a single function call
 source('../../bin/dermalNFData.R')
