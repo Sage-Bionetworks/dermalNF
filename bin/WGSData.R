@@ -14,12 +14,12 @@ getMutationSummary<-function(){
     })
 }
 #summary(tab$Consequence)
-}
 
+library(parallel)
 
 getMutationMatrix<-function(impact='HIGH'){
 
-    allMuts<-sapply(allmafs$entity.id,function(x){
+    allMuts<-mclapply(allmafs$entity.id,function(x){
         res<-synGet(x)
         tab<-read.table(gzfile(res@filePath),sep='\t',header=T)
         #dont filter by consequence
@@ -28,7 +28,7 @@ getMutationMatrix<-function(impact='HIGH'){
             vars<-tab[which(tab$IMPACT==impact),]
         else
             vars<-tab
-        print(summary(vars$Hugo_Symbol))
-        return vars
-    })
+        print(length(which(vars$Hugo_Symbol)=='NF1'))#summary(vars$Hugo_Symbol))
+        return (vars)
+    },mc.cores=4)
 }

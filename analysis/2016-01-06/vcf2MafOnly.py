@@ -35,42 +35,38 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
     #now for each patient, determine which samples are in blood vs. tumor
     p1ids=[a for a in annotes if a['patientID'][0] in ['CT00000'+pat,'CT0000'+pat]]
     blood=[a['id'] for a in p1ids if a['tissueID'][0]=='PBMC']
-    tumor=[a['id'] for a in p1ids if a['tissueID'][0]!='PBMC']
+#    tumor=[a['id'] for a in p1ids if a['tissueID'][0]!='PBMC']
 
-    print 'Found %d tumor samples and %d blood samples for patient %s'%(len(tumor),len(blood),pat)
+    print 'Found %d blood samples for patient %s'%(len(blood),pat)
 
     if len(blood)>0 and blood[0] in syn_files.keys():
         bloodfile=re.sub('.vcf','',syn_files[blood[0]])
     else:
         bloodfile=''
-
-
-    for t in tumor:
-        tumfile=re.sub('.vcf','',syn_files[t])
-        tumfile_annotations=syn.get(t,downloadFile=False).annotations
-        if(bloodfile==''):
-            print "Missing normal for patient %s, running without"%(pat)
-            sstring=tumfile
-        else:
-            print t,blood[0]
-            sstring=','.join([tumfile,bloodfile])
-        cmfile='patient_'+pat+'_'+tumfile+'_'+bloodfile+'_commands.sh'
+	continue
+    bloodfile_annotations=syn.get(blood[0],downloadFile=False).annotations
+ #   for t in tumor:
+ #       tumfile=re.sub('.vcf','',syn_files[t])
+ #       tumfile_annotations=syn.get(t,downloadFile=False).annotations
+ #       if(bloodfile==''):
+ #           print "Missing normal for patient %s, running without"%(pat)
+ #           sstring=tumfile
+ #       else:
+ #           print t,blood[0]
+ #           sstring=','.join([tumfile,bloodfile])
+    sstring=bloodfile
+    cmfile='patient_'+pat+'_'+bloodfile+'_commands.sh'
         ##first create vcf file with only two samples
-        bcftoolscmd="bcftools view %s -s %s -U"%(vcf_file,sstring)
-        if(bloodfile==''):
-            outvcf="patient%s_tumor_%s_only.vcf"%(pat,t)
-            outmaf="tumorVsNormal_pat%s_tumor_%s_only.maf"%(pat,t)
-        else:
-            outvcf="../2015-12-16/patient%s_tumor_%s_vs_norm_%s.vcf"%(pat,t,blood[0])
-            outmaf="tumorVsNormal_pat%s_tumor_%s_vs_norm_%s.maf"%(pat,t,blood[0])
+    bcftoolscmd="bcftools view %s -s %s -U"%(vcf_file,sstring)
+    outvcf="../2015-12-16/patient%s_normOnly_%s.vcf"%(pat,blood[0])
+    outmaf="tumorVsNormal_pat%s_normOnly_%s.maf"%(pat,blood[0])
         #these have already been processede
-        #patsh.write(bcftoolscmd+'>'+outvcf+'\nbgzip '+outvcf+'\n')
         #then run vcf2maf on that subset
 
                 #create new annotation string
         #activity string?
-        annotationstr="'{\"dataType\":\"WGS\",\"tissueType\":\"tumorVsNormal\",\"patientId\":\""+tumfile_annotations['patientID'][0]+"\""
-        annotationstr=annotationstr+",\"tissueID\":\""+tumfile_annotations['tissueID'][0]+"\"}'"
+    annotationstr="'{\"dataType\":\"WGS\",\"tissueType\":\"PBMC\",\"patientId\":\""+bloodfile_annotations['patientID'][0]+"\"}'"
+#        annotationstr=annotationstr+",\"tissueID\":\""+tumfile_annotations['tissueID'][0]+"\"}'"
 
 
 
@@ -85,24 +81,23 @@ for pat in ['1','2','3','4','5','6','7','8','9','10','11','12','13']:
         #patsh.write(synapse_upload_vcf+'\n\n')
 
         #patsh.write('bgzip -d '+outvcf+'.gz\n\n')
-        if os.path.exists(outmaf+'.gz'):
-	    print outmaf+'.gz is already made, not re-creating'
-	    continue
-	patsh=open(cmfile,'w')
-        vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-tumor-id %s"%(outvcf,tumfile)
-        if bloodfile!='':
-            vcf2maf_cmd+=' --vcf-normal-id '+bloodfile
-        vcf2maf_cmd+=" --output-maf %s --vep-forks 36 --species homo_sapiens --ref-fasta %s"%(outmaf,reffasta)
+    if os.path.exists(outmaf+'.gz'):
+	print outmaf+'.gz is already made, not re-creating'
+	continue
+    patsh=open(cmfile,'w')
+    vcf2maf_cmd=vcf2maf+" --input-vcf %s --vcf-normal-id %s"%(outvcf,bloodfile)
+    vcf2maf_cmd+=" --output-maf %s --vep-forks 12 --species homo_sapiens --ref-fasta %s"%(outmaf,reffasta)
+    patsh.write(bcftoolscmd+'>'+outvcf+'\n') #bgzip '+outvcf+'\n')
 
-        patsh.write(vcf2maf_cmd+'\ngzip '+outmaf+'\n')
+    patsh.write(vcf2maf_cmd+'\ngzip '+outmaf+'\n')
         #then these file should be uploaded to synapse
 
-        synapse_upload_maf="synapse store "+outmaf+".gz --parentId=syn5522808 --annotations "+annotationstr#+' --used '+usedstr
-        patsh.write(synapse_upload_maf+'\n')
+    synapse_upload_maf="synapse store "+outmaf+".gz --parentId=syn5522808 --annotations "+annotationstr#+' --used '+usedstr
+    patsh.write(synapse_upload_maf+'\n')
 
         #patsh.write(bcftoolscmd+'>'+outvcf+'\n'+vcf2maf_cmd+'\n')
         #os.system(cmd)
-        patsh.close()
+    patsh.close()
     #os.system('sh '+cmfile+' &')
 
         #examples for patient 1
