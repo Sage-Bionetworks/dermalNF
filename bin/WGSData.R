@@ -4,6 +4,9 @@ library(synapseClient)
 synapseLogin()
 
 allmafs<-synapseQuery("select * from entity where parentId=='syn5522808'")
+som.mafs<-allmafs[which(allmafs$entity.tissueType=='tumorVsNormal'),]
+gl.mafs<-allmafs[which(allmafs$entity.tissueType=='PBMC'),]
+
 
 getMutationSummary<-function(){
 
@@ -17,12 +20,12 @@ getMutationSummary<-function(){
 
 library(parallel)
 library(data.table)
-storeMutationFiles<-function(impact='HIGH'){
+storeSomMutationFiles<-function(impact='HIGH'){
 
-    allMuts<-lapply(allmafs$entity.id,function(x){
+    allMuts<-lapply(som.mafs$entity.id,function(x){
         res<-synGet(x)
-        if(res@annotations$tissueType=='PBMC')
-            return(NULL)
+       # if(res@annotations$tissueType=='PBMC')
+      #      return(NULL)
         fp=res@filePath
         fname=paste('patient',gsub('CT0+','',res@annotations$patientId),'tissue',res@annotations$tissueID,impact,'impact_somaticMutations.maf',sep='_')
         if(! file.exists(fname)){
@@ -46,6 +49,35 @@ storeMutationFiles<-function(impact='HIGH'){
     return(allMuts)
 }
 
+##now do the same for the germline files
+storeGermlineMutationFiles<-function(impact='HIGH'){
+  
+  allMuts<-lapply(gl.mafs$entity.id,function(x){
+    res<-synGet(x)
+    # if(res@annotations$tissueType=='PBMC')
+    #      return(NULL)
+    fp=res@filePath
+    fname=paste('patient',gsub('CT0+','',res@annotations$patientId),'tissue',res@annotations$tissueID,impact,'impact_germlineMutations.maf',sep='_')
+    if(! file.exists(fname)){
+      tab<-as.data.frame(fread(paste('zcat',fp)))
+      #dont filter by consequence
+      #vars<-tab[which(tab$Consequence%in%mutClasses),]
+      if(!is.na(impact))
+        vars<-tab[which(tab$IMPACT==impact),]
+      else
+        vars<-tab
+      print(length(which(vars$Hugo_Symbol=='NF1')))#summary(vars$Hugo_Symbol))
+      
+      write.table(vars,file=fname,row.names=F,quote=F)
+    }
+    sf=File(fname,parentId='syn5580983')
+    annotations(sf)<-res@annotations
+    executed(sf)<-'https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData.R'
+    synStore(sf)
+    return (vars)
+  })#,mc.cores=4)
+  return(allMuts)
+}
 
 getMutationStatsForGene<-function(gene='NF1'){
   ##this function will get the number of 'high impact' somatic mutations as well
