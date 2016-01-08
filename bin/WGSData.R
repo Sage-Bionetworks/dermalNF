@@ -87,42 +87,81 @@ getMutationStatsForGene<-function(gene='NF1'){
   ##first read in all files
   allmuts<-lapply(allsoms$entity.id,function(x) read.table(synGet(x)@filePath,sep=' ',header=T,quote='"'))
   names(allmuts)<-allsoms$entity.id
+  
+  ##now split out somatic or germline
+  som.germ<-lapply(allmuts,function(x){
+    is.germ=apply(x,1,function(y){
+      (y[['Tumor_Seq_Allele1']]==y[['Match_Norm_Seq_Allele1']] && y[['Tumor_Seq_Allele2']]==y[['Match_Norm_Seq_Allele2']] )})
+    return(list(Somatic=x[-which(is.germ),],Germline=x[which(is.germ),]))
+    })
+  
 
-  df<-apply(allsoms,1,function(x){
+  
+  #df<-apply(allsoms,1,function(x){
+  classes=c()
+  pats<-c()
+  tissue=c()
+  pos=c()
+  mutType=c()
+  for(i in 1:nrow(allsoms)){
+    x=allsoms[i,]
+  
     arr=unlist(strsplit(x[['entity.name']],split='_'))
-    mcounts=length(which(allmuts[[x[['entity.id']]]][,'Hugo_Symbol']==gene))
-    c(NumMutations=mcounts,Gene=gene,Patient=arr[2],Tissue=arr[4])
-  })
-  df<-as.data.frame(t(df))
-  df$NumMutations=as.numeric(as.character(df$NumMutations))
+    mv=som.germ[[x[['entity.id']]]]
+    idx.som=which(mv$Somatic[,'Hugo_Symbol']==gene)
+    idx.germ=which(mv$Germline[,'Hugo_Symbol']==gene)
+    if(length(idx.som)>0){
+      classes=c(classes,as.character(mv$Somatic[idx.som,'Consequence']))
+      pos=c(pos,as.character(mv$Somatic[idx.som,'HGVSc']))
+      pats=c(pats,rep(arr[2],length(idx.som)))
+      tissue=c(tissue,rep(arr[4],length(idx.som)))
+      mutType=c(mutType,rep('Somatic',length(idx.som)))
+    }
+    if(length(idx.germ)>0){
+      classes=c(classes,as.character(mv$Germline[idx.germ,'Consequence']))
+      pos=c(pos,as.character(mv$Germline[idx.germ,'HGVSc']))
+      pats=c(pats,rep(arr[2],length(idx.germ)))
+      tissue=c(tissue,rep(arr[4],length(idx.germ)))
+      mutType=c(mutType,rep('Germline',length(idx.germ)))
+    }
+  }
+  
+  df=data.frame(Patient=pats,MutationType=mutType,Position=pos,Tissue=tissue,MutationClass=classes) 
+  
+  
  # df$Patient=as.numeric(as.character(df$Patient))
   require(ggplot2)
   png(paste('numberOf',gene,'MutationsPerPatient.png',sep=''))
-  p<-ggplot(df)+geom_jitter(aes(Patient,NumMutations,colour=Patient),height=0.1)
-  p<-p+ggtitle(paste('Number of high-impact somatic mutations in',gene))
+  p<-ggplot(df)+geom_bar(aes(Patient,fill=MutationType),position='dodge')
+  p<-p+ggtitle(paste('Number of high-impact  mutations in',gene))
   print(p)
   dev.off()
 
   ##now do class of mutation
-  classes=c()
-  pats<-c()
-  tissue=c()
-  for(i in 1:nrow(allsoms)){
-    x=allsoms[i,]
-    arr=unlist(strsplit(x[['entity.name']],split='_'))
-    idx=which(allmuts[[x[['entity.id']]]][,'Hugo_Symbol']==gene)
-    if(length(idx)>0){
-      classes=c(classes,as.character(allmuts[[x[['entity.id']]]][idx,'Consequence']))
-      pats=c(pats,rep(arr[2],length(idx)))
-      tissue=c(tissue,rep(arr[4],length(idx)))
-    }
-  }
-   newdf<-data.frame(VarType=classes,Patient=pats,Tissue=tissue)
-   png(paste('typeOf',gene,'MutationsPerPatient.png',sep=''))
-
-   p<-ggplot(newdf)+geom_bar(aes(Patient,fill=VarType),position='dodge')
-   p<-p+ggtitle(paste('Type of high-impact somatic mutations in',gene))
+   png(paste('typeOf',gene,'GermlineMutationsPerPatient.png',sep=''))
+   p<-ggplot(unique(subset(df,MutationType=='Germline')))+geom_bar(aes(Patient,fill=MutationClass),position='dodge')
+   p<-p+ggtitle(paste('Type of high-impact Germline mutations in',gene))
     print(p)
     dev.off()
+ 
+    png(paste('typeOf',gene,'SomaticMutationsPerPatient.png',sep=''),width=1000)
+    p<-ggplot(subset(df,MutationType=='Somatic'))+geom_bar(aes(Patient,fill=MutationClass),position='dodge')
+    p<-p+ggtitle(paste('Type of high-impact Somatic mutations in',gene))
+    print(p)
+    dev.off()   
+    
+  ##now try to classify the position of the mutation for each gene
+    ##now do class of mutation
+
+  png(paste('locationOf',gene,'SomaticMutationsPerPatient.png',sep=''))
+  p=ggplot(subset(df,MutationType=='Somatic'))+geom_bar(aes(Patient,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
+  print(p)
+  dev.off()
+  png(paste('locationOf',gene,'GermlineMutationsPerPatient.png',sep=''),width=1000)
+  p=ggplot(subset(df,MutationType=='Germline'))+geom_bar(aes(Patient,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
+  print(p)
+  dev.off()
   return(df)
 }
+
+
