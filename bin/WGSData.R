@@ -96,7 +96,6 @@ getMutationStatsForGene<-function(gene='NF1'){
     })
   
 
-  
   #df<-apply(allsoms,1,function(x){
   classes=c()
   pats<-c()
