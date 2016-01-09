@@ -15,7 +15,13 @@ annotes<-sapply(samps$entity.id,function(x) synGet(x,downloadFile=F)@annotations
 names(annotes)<-samp$entity.id
 
 ##now i did some updates of the sequence analysis
-res1=getMutationStatsForGene("NF1")
+all.muts<-getAllMutData(impact='HIGH')
 
-res2=getMutationStatsForGene("TP53")
-res3=getMutationStatsForGene("MUC6")
+#res=storeSomMutationFiles(impact='MODERATE')
+res=getMutationStatsForGene("OR4C5")
+res=getMutationStatsForGene("FOXD1")
+res=getMutationStatsForGene("MUC6")
+
+res=getMutationStatsForGene("NCAM1")
+res=getMutationStatsForGene("SHANK3")
+res=getMutationStatsForGene("FOXO6")
