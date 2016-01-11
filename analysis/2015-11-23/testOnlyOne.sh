@@ -1,0 +1,1 @@
+perl ../../../vcf2maf-master/vcf2maf.pl --input-vcf recalibrated_indels_for_recalibrated_snps_for_dermalNFall.vcf         --tumor-id=SL107661 --normal-id=SL102337 --output-maf=tumorVsNormal_pat1_syn4987466.maf         --vcf-tumor-id=SL102337         --vcf-normal-id=SL107661 --species homo_sapiens_refseq

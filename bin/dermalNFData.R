@@ -14,33 +14,58 @@ require(parallel)
 #################
 
 cnv_annotations<-function(){
-    snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
+    snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID,alternateTumorID FROM entity where parentId=="syn5004874"')
 
-    names(snpfiles)<-c('tissueType','patientID','File','tissueID','synapseID')
+    names(snpfiles)<-c('tissueType','patientId','alternateTumorId','File','tissueId','synapseId')
     return(snpfiles)
 }
 
 cnv.dat<-cnv_annotations()
-cnv.dat<-cnv.dat[which(!is.na(cnv.dat$patientID)),]
-patients<-cnv.dat$patientID
+cnv.dat<-cnv.dat[which(!is.na(cnv.dat$patientId)),]
+patients<-cnv.dat$patientId
 names(patients)<-sapply(cnv.dat$File,function(x) gsub('3096-PBK-','X',gsub('_Final.csv','',x)))
 patients<-sapply(patients,function(x) gsub("CT0*","",x))
 
-clnames<-paste(patients,cnv.dat$tissueID)
+clnames<-paste(patients,cnv.dat$tissueId)
 names(clnames)<-names(patients)
 
 tissueType=cnv.dat$tissueType
 names(tissueType)<-names(patients)
 
+
 #SNP annotation file
+snp_annotation_file<-function(){
+  ##need to downlod and read in large annotation file as well
+  print("Retrieving OMNI Array SNP annotation data from Synapse...")
+  anndata<-synGet('syn5297573')
+  return(anndata@filePath)
+}
+
 snp_annotation_data<-function(){
-    ##need to downlod and read in large annotation file as well
-    print("Retrieving OMNI Array SNP annotation data from Synapse...")
-    anndata<-synGet('syn5297573')
-    annot <- as.data.frame(fread(anndata@filePath,sep=",",header=T))
+  fp=snp_annotation_file()
+    annot <- as.data.frame(fread(fp,sep=",",header=T))
     return(annot)
 }
 
+cnv_unprocessed_files<-function(){
+  
+  snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
+  snpfiles<-snpfiles[grep("Final.csv",snpfiles$entity.name),]
+  snp.sample.names<-sapply(snpfiles$entity.name,function(x) gsub('_Final.csv','',unlist(strsplit(x,split='-'))[3]))
+  snp.patients<-snpfiles$entity.patientID
+  names(snp.patients)<-snp.sample.names
+  
+  snp.tissue<-snpfiles$entity.tissueID
+  names(snp.tissue)<-snp.sample.names
+  
+    sample.data<-lapply(snpfiles$entity.id,function(synid){
+    print(paste("Getting sample",snpfiles$entity.name[match(synid,snpfiles$entity.id)]))
+    fname=synGet(synid)
+    return(fname@filePath)
+  })
+    names(sample.data)<-snpfiles$entity.id
+    return(sample.data)
+}
 
 #this function gets the original files from the OMNI arrays
 cnv_unprocessed<-function(annot=NA){
@@ -61,13 +86,13 @@ cnv_unprocessed<-function(annot=NA){
 
     print('Now retreiving original CNV data from Dermal NF OMNI arrays...')
     #here get the sample data from snp files
-    sample.data<-mclapply(snpfiles$entity.id,function(synid){
+    sample.data<-lapply(snpfiles$entity.id,function(synid){
         print(paste("Getting sample",snpfiles$entity.name[match(synid,snpfiles$entity.id)]))
         fname=synGet(synid)
         data <- as.data.frame(fread(fname@filePath,sep=",",header=T))
         ad<-data[match(annot$Name,data$'SNP.Name'),]
         return(ad)
-    },mc.cores=6)
+    })
     names(sample.data)<-snpfiles$entity.id
     return(sample.data)
 }
@@ -84,13 +109,20 @@ cnv_segmented<-function(filterSD=TRUE){
 
 }
 
+cnv_segmented_by_gene<-function(){
+    si='syn5462050'
+    fn<-synGet(si)
+    tab<-read.table(fn@filePath,header=T)
+    return(tab)
+}
+
 #################
 #PROTEOMICS
 #################
 protein_annotations<-function(){
     annots<-synapseQuery("select name,ID,dataType,tissueID,tissueType,patientID,sampleID from entity where parentId=='syn4984949'")
     annots<-annots[-grep('EMPTY',annots$entity.name),]
-      
+
     colnames(annots)<-c('tissueType','dataType','sampleId','patientId','fileName','tissueId','synapseId')
 
     return(annots)
@@ -126,7 +158,7 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 prot_normalized<-function(store=FALSE,all.expr=TRUE){
   #store indicates we should calculate the values and uplod to synapse, otherwise we can just download pre-computed
   #all.expr means select only those proteins that non-zero in at least one sample
-  
+
   allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
 
 
@@ -190,7 +222,7 @@ prot_normalized<-function(store=FALSE,all.expr=TRUE){
     matfile=synGet('syn5305003')
     expr.ratio.mat<-as.data.frame(fread(matfile@filePath,sep='\t',header=T))
   }
-    
+
   if(all.expr){
     zo=which(apply(expr.ratio.mat[,-1],1,function(x) all(x==0)))
     if(length(zo)>0){
@@ -209,22 +241,24 @@ prot_normalized<-function(store=FALSE,all.expr=TRUE){
 #RNA
 #################
 rna_annotations<-function(){
-    synq=synapseQuery("select name,id,Patient_ID,Tissue_ID from entity where parentId=='syn4984701'")
-    colnames(synq)<-c('tissueID','fileName','synapseId','patientId')
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn5493036'")
+    colnames(synq)<-c('patientId','alternateTumorId','fileName','tissueId','synapseId')
     synq=synq[grep('_featureCounts.txt',synq$fileName),]
     return(synq)
 }
 
-rna_bam_files<-function(){
-
+rna_bam_annotations<-function(){
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn4984620'")
+    colnames(synq)<-c('patientID','alternateTumorId','fileName','tissueId','synapseId')
+    synq=synq[grep('.bam$',synq$fileName),]
+    return(synq)
 }
 
-
 ##here are the count files analyzed by featureCounts
-rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
+rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
 
     if(!stored){
-        synq=synapseQuery("select name,id,Patient_ID,Tissue_ID from entity where parentId=='syn4984701'")
+        synq=synapseQuery("select name,id,patientID,tissueID from entity where parentId=='syn5493036'")
         synq<-synq[grep("accepted_hits",synq$entity.name),]
         synfiles<-sapply(synq$entity.id,synGet)
                                         #now read in alfilel values
@@ -255,31 +289,68 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0){
     }else{
         gene.pat.mat<-read.table(synGet('syn5051784')@filePath)
     }
-  
+
     gene.pat.mat<-t(gene.pat.mat)
-  
+
     if(doNorm){
       print('Performing size factor adjustment to samples')
       require(DESeq2)
       samp=data.frame(SampleID=colnames(gene.pat.mat))
       cds<- DESeqDataSetFromMatrix(gene.pat.mat,colData=samp,~SampleID)#now collect proteomics data
-      
+
       sizeFac<-estimateSizeFactors(cds)
-      
-      normCounts<-gene.pat.mat/sizeFac@colData$sizeFactor
-      
+
+      normCounts<-assay(cds)/sizeFac@colData$sizeFactor
+      colnames(normCounts)<-colnames(gene.pat.mat)
       gene.pat.mat<-normCounts
+
+    }else if(doLogNorm){
+      print("Performing variance stabilizing log2 normalization")
+      require(DESeq2)
+      samp=data.frame(SampleID=colnames(gene.pat.mat))
+      cds<- DESeqDataSetFromMatrix(gene.pat.mat,colData=samp,~SampleID)#now collect proteomics data
+      vstab=rlog(cds)
+
+      varmat<-assay(vstab)
+      colnames(varmat)<-colnames(gene.pat.mat)
+      gene.pat.mat<-varmat
+      minCount=log2(minCount)
+
     }
+
     sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
-    
+
     return(gene.pat.mat[sel.vals,])
 
 }
 
 
+#we can also get the FPKM
+rna_fpkm_matrix<-function(){
+  ##DOES NOT WORK YET....
+  counts=rna_count_matrix(TRUE,FALSE,0)
+  require(DESeq2)
+  samp=data.frame(SampleID=colnames(counts))
+  library("GenomicFeatures")
+  library('TxDb.Hsapiens.UCSC.hg19.knownGene')
+  gr=transcripts(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  hug<-as.data.frame(fread('../../data/HugoGIDstoEntrez_DAVID.txt'))
+  ecounts<-counts
+  rownames(ecounts)<-hug[match(rownames(counts),hug[,1]),2]
+  ecounts=ecounts[which(!is.na(rownames(ecounts))),]
+  cds<- DESeqDataSetFromMatrix(ecounts,colData=samp,~SampleID)#now collect proteomics data
+
+ # rowRanges(cds)<-gr
+#  frag<-fpkm(cds)
+
+}
+
 #################
 #WGS
 #################
 wgs_annotations<-function(){
-
+    synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn5522788'")
+    colnames(synq)<-c('patientId','alternateTumorId','fileName','tissueId','synapseId')
+   # synq=synq[-grep('hard-filtered',synq$fileName),]
+    return(synq)
 }
