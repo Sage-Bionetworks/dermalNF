@@ -48,16 +48,16 @@ snp_annotation_data<-function(){
 }
 
 cnv_unprocessed_files<-function(){
-  
+
   snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID FROM entity where parentId=="syn5004874"')
   snpfiles<-snpfiles[grep("Final.csv",snpfiles$entity.name),]
   snp.sample.names<-sapply(snpfiles$entity.name,function(x) gsub('_Final.csv','',unlist(strsplit(x,split='-'))[3]))
   snp.patients<-snpfiles$entity.patientID
   names(snp.patients)<-snp.sample.names
-  
+
   snp.tissue<-snpfiles$entity.tissueID
   names(snp.tissue)<-snp.sample.names
-  
+
     sample.data<-lapply(snpfiles$entity.id,function(synid){
     print(paste("Getting sample",snpfiles$entity.name[match(synid,snpfiles$entity.id)]))
     fname=synGet(synid)
@@ -326,23 +326,24 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
 
 
 #we can also get the FPKM
-rna_fpkm_matrix<-function(){
+rna_fpkm_matrix<-function(byIsoform=FALSE){
   ##DOES NOT WORK YET....
-  counts=rna_count_matrix(TRUE,FALSE,0)
-  require(DESeq2)
-  samp=data.frame(SampleID=colnames(counts))
-  library("GenomicFeatures")
-  library('TxDb.Hsapiens.UCSC.hg19.knownGene')
-  gr=transcripts(TxDb.Hsapiens.UCSC.hg19.knownGene)
-  hug<-as.data.frame(fread('../../data/HugoGIDstoEntrez_DAVID.txt'))
-  ecounts<-counts
-  rownames(ecounts)<-hug[match(rownames(counts),hug[,1]),2]
-  ecounts=ecounts[which(!is.na(rownames(ecounts))),]
-  cds<- DESeqDataSetFromMatrix(ecounts,colData=samp,~SampleID)#now collect proteomics data
-
- # rowRanges(cds)<-gr
-#  frag<-fpkm(cds)
-
+    if(byIsoform){
+        gene.pat.mat<-read.table(synGet('syn5579597')@filePath)
+    }
+    else{
+        gene.pat.mat<-read.table(synGet('syn5579598')@filePath,row.names=NULL)
+        dupes<-unique(gene.pat.mat[which(duplicated(gene.pat.mat[,1])),1])
+        dupe.vals<-t(sapply(dupes,function(x)
+            colSums(gene.pat.mat[which(gene.pat.mat[,1]==x),2:ncol(gene.pat.mat)])))
+        sing.vals<-gene.pat.mat[which(!gene.pat.mat[,1]%in%dupes),2:ncol(gene.pat.mat)]
+        rownames(dupe.vals)<-dupes
+        rownames(sing.vals)<-gene.pat.mat[which(!gene.pat.mat[,1]%in%dupes),1]
+        newdf<-rbind(dupe.vals,sing.vals)
+        gene.pat.mat<-newdf
+    }
+    #gene.pat.mat<-t(gene.pat.mat)
+    return(gene.pat.mat)
 }
 
 #################
