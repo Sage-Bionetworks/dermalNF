@@ -216,7 +216,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
   var_al=c()
   for(i in 1:nrow(allsoms)){
     x=allsoms[i,]
-  
+    
     arr=unlist(strsplit(x[['entity.name']],split='_'))
     mv=som.germ[[x[['entity.id']]]]
     #idx.som=which(mv$Somatic[,'Hugo_Symbol']==gene)
@@ -230,7 +230,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
         pos=c(pos,as.character(mvl[idx,'HGVSc']))
         ppos=c(ppos,as.character(mvl[idx,'HGVSp_Short']))
         t_depth=c(t_depth,as.numeric(as.character(mvl[idx,'t_depth'])))
-      
+        
         mut_chrom=c(mut_chrom,mvl[idx,'Chromosome'])
         mut_start=c(mut_start,mvl[idx,'Start_Position'])
         mut_end=c(mut_end,mvl[idx,'End_Position'])
@@ -240,11 +240,11 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
         tav<-sapply(mvl[,tac],as.character)
         var_al=c(var_al,tav[idx,which(tav[idx,]!=ra)])
         
-       pats=c(pats,rep(arr[2],length(idx)))
+        pats=c(pats,rep(arr[2],length(idx)))
         tissue=c(tissue,rep(arr[4],length(idx)))
         mutType=c(mutType,rep(mt,length(idx)))
-    }
-    
+      }
+      
     }
   }
   if(length(pats)==0)
