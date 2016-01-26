@@ -257,7 +257,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
       Mutation_Type=classes,TumorDepth=t_depth,
       Position=pos,Tissue=tissue,Patient=pats)
 
-  mindf=unique(df[,-c(11,13)])
+  mindf=unique(df[,-c(3,11,13)])
   write.table(mindf,file=paste(gene,paste(impact,collapse='_'),'mutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
   df$Position=as.character(df$Position)
   mns=grep("NN+",df$Position)
