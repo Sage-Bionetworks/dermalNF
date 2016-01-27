@@ -216,6 +216,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
   mut_end=c()
   ref_al=c()
   var_al=c()
+  sid=c()
   for(i in 1:nrow(allsoms)){
     x=allsoms[i,]
 
@@ -232,7 +233,10 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
         pos=c(pos,as.character(mvl[idx,'HGVSc']))
         ppos=c(ppos,gsub('p.','',as.character(mvl[idx,'HGVSp_Short']),fixed=T))
         t_depth=c(t_depth,as.numeric(as.character(mvl[idx,'t_depth'])))
-
+	if(mt=='Somatic')
+           sid=c(sid,rep(paste(arr[1:4],collapse='_'),length(idx)))
+	else
+	   sid=c(sid,rep(paste(arr[1:2],collapse='_'),length(idx)))	   
         mut_chrom=c(mut_chrom,as.character(mvl[idx,'Chromosome']))
         mut_start=c(mut_start,mvl[idx,'Start_Position'])
         mut_end=c(mut_end,mvl[idx,'End_Position'])
@@ -250,15 +254,23 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW')){
   if(length(pats)==0)
     return(NULL)
   df=data.frame(Hugo_Symbol=rep(gene,length(mutType)), Protein_Change=ppos,
-      Sample_ID=paste('Patient',pats,'Sample',tissue,sep='_'),
+      Sample_ID=sid,
       Mutation_Status=mutType,Chromosome=mut_chrom,
       Start_Position=mut_start,End_Position=mut_end,
       Reference_Allele=ref_al,Variant_Allele=var_al,
       Mutation_Type=classes,TumorDepth=t_depth,
       Position=pos,Tissue=tissue,Patient=pats)
 
-  mindf=unique(df[,-c(3,11,13)])
+  mindf=unique(df[,-c(11,13,14)])
   write.table(mindf,file=paste(gene,paste(impact,collapse='_'),'mutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+  if(length(which(mutType=='Somatic'))>0){
+	red.df<-subset(mindf,Mutation_Status=="Somatic")
+  	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'SOMATICmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+  }
+  if(length(which(mutType=='Germline'))>0){
+  	red.df<-subset(mindf,Mutation_Status=='Germline')
+	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'GERMLINEmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+  }
   df$Position=as.character(df$Position)
   mns=grep("NN+",df$Position)
   df$Position[mns]=unlist(sapply(df$Position[mns],function(x) {
