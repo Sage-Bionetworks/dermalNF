@@ -216,6 +216,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
   mut_end=c()
   ref_al=c()
   var_al=c()
+  sid=c()
   for(i in 1:nrow(allsoms)){
     x=allsoms[i,]
 
@@ -232,7 +233,10 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
         pos=c(pos,as.character(mvl[idx,'HGVSc']))
         ppos=c(ppos,gsub('p.','',as.character(mvl[idx,'HGVSp_Short']),fixed=T))
         t_depth=c(t_depth,as.numeric(as.character(mvl[idx,'t_depth'])))
-
+	if(mt=='Somatic')
+           sid=c(sid,rep(paste(arr[1:4],collapse='_'),length(idx)))
+	else
+	   sid=c(sid,rep(paste(arr[1:2],collapse='_'),length(idx)))	   
         mut_chrom=c(mut_chrom,as.character(mvl[idx,'Chromosome']))
         mut_start=c(mut_start,mvl[idx,'Start_Position'])
         mut_end=c(mut_end,mvl[idx,'End_Position'])
@@ -250,15 +254,23 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
   if(length(pats)==0)
     return(NULL)
   df=data.frame(Hugo_Symbol=rep(gene,length(mutType)), Protein_Change=ppos,
-      Sample_ID=paste('Patient',pats,'Sample',tissue,sep='_'),
+      Sample_ID=sid,
       Mutation_Status=mutType,Chromosome=mut_chrom,
       Start_Position=mut_start,End_Position=mut_end,
       Reference_Allele=ref_al,Variant_Allele=var_al,
       Mutation_Type=classes,TumorDepth=t_depth,
       Position=pos,Tissue=tissue,Patient=pats)
 
-  mindf=unique(df[,-c(3,11,13)])
+  mindf=unique(df[,-c(11,13,14)])
   write.table(mindf,file=paste(gene,paste(impact,collapse='_'),'mutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+  if(length(which(mutType=='Somatic'))>0){
+	red.df<-subset(mindf,Mutation_Status=="Somatic")
+  	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'SOMATICmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+  }
+  if(length(which(mutType=='Germline'))>0){
+  	red.df<-subset(mindf,Mutation_Status=='Germline')
+	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'GERMLINEmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+  }
   df$Position=as.character(df$Position)
   mns=grep("NN+",df$Position)
   df$Position[mns]=unlist(sapply(df$Position[mns],function(x) {
@@ -270,6 +282,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
   # df$Sample_ID=as.numeric(as.character(df$Sample_ID))
   require(ggplot2)
   impact=paste(impact,collapse='_or_')
+<<<<<<< HEAD
   if(doPlot){
     png(paste('numberOf',impact,'impact',gene,'MutationsPerPatient.png',sep=''))
     p<-ggplot(df)+geom_bar(aes(Sample_ID,fill=Mutation_Status),position='dodge')
@@ -281,10 +294,22 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
     png(paste('typeOf',impact,'impact',gene,'GermlineMutationsPerPatient.png',sep=''))
     p<-ggplot(unique(subset(df,Mutation_Status=='Germline')))+geom_bar(aes(Sample_ID,fill=Mutation_Type),position='dodge')
     p<-p+ggtitle(paste('Type of Germline mutations in',gene))
+=======
+  pdf(paste('numberOf',impact,'impact',gene,'MutationsPerPatient.pdf',sep=''))
+  p<-ggplot(df)+geom_bar(aes(Sample_ID,fill=Mutation_Status),position='dodge')
+  p<-p+ggtitle(paste('Number of',impact,'impact  mutations in',gene))
+  print(p)
+  dev.off()
+
+  ##now do class of mutation
+   pdf(paste('typeOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
+   p<-ggplot(unique(subset(df,Mutation_Status=='Germline')))+geom_bar(aes(Sample_ID,fill=Mutation_Type),position='dodge')
+   p<-p+ggtitle(paste('Type of Germline mutations in',gene))
+>>>>>>> 9fe9a3d0c1a3213dd2fdf2d0efd2f2cea29acd67
     print(p)
     dev.off()
 
-    png(paste('typeOf',impact,'impact',gene,'SomaticMutationsPerPatient.png',sep=''))
+    pdf(paste('typeOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
     p<-ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Sample_ID,fill=Mutation_Type),position='dodge')
     p<-p+ggtitle(paste('Type of',impact,'impact Somatic mutations in',gene))
     print(p)
@@ -293,6 +318,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
   ##now try to classify the position of the mutation for each gene
     ##now do class of mutation
 
+<<<<<<< HEAD
     png(paste('locationOf',impact,'impact',gene,'SomaticMutationsPerPatient.png',sep=''))
     p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Sample_ID,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
     print(p)
@@ -301,6 +327,26 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
     p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Sample_ID,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
     print(p)
     dev.off()
+=======
+  pdf(paste('locationOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
+  p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Sample_ID,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
+  print(p)
+  dev.off()
+  pdf(paste('locationOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
+  p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Sample_ID,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
+  print(p)
+  dev.off()
+
+  ##frequency of hits
+  pdf(paste('frequencyOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
+  p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Position,fill=Sample_ID))+ggtitle(paste(gene,'Mutation Position'))+theme(axis.text.x=element_text(angle = -90, hjust = 0))
+  print(p)
+  dev.off()
+  pdf(paste('frequencyOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
+  p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Position,fill=Sample_ID))+ggtitle(paste(gene,'Mutation Position'))+theme(axis.text.x=element_text(angle = -90, hjust = 0))
+  print(p)
+  dev.off()
+>>>>>>> 9fe9a3d0c1a3213dd2fdf2d0efd2f2cea29acd67
 
     ##frequency of hits
     png(paste('frequencyOf',impact,'impact',gene,'SomaticMutationsPerPatient.png',sep=''))
