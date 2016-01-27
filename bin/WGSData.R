@@ -195,14 +195,16 @@ getMutationsStatsByPatientAndGene<-function(patient='11',gene='NF1'){
 
 
 ##primary function to get mutation statistics for gene
-getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=TRUE){
+getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=TRUE,som.germ=NULL){
+
+ if(is.null(som.germ)){
   allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
   print(paste('Selecting from',nrow(allsoms),'mutation files'))
   allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
   print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
   som.germ=getAllMutData(allsoms)
   #df<-apply(allsoms,1,function(x){
-
+ }
   classes=c()
   pats<-c()
   tissue=c()
@@ -222,12 +224,10 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
 
     arr=unlist(strsplit(x[['entity.name']],split='_'))
     mv=som.germ[[x[['entity.id']]]]
-    #idx.som=which(mv$Somatic[,'Hugo_Symbol']==gene)
-    #idx.germ=which(mv$Germline[,'Hugo_Symbol']==gene)
-    #print(paste('Found',length(idx.som),'somatic and',length(idx.germ),'germline mutations in Sample_ID',arr[2]))
     for(mt in c("Somatic","Germline")){
       mvl=mv[[mt]]
-      idx=which(mvl[,'Hugo_Symbol']==gene)
+      idx=c()
+      try(idx<-which(mvl[,'Hugo_Symbol']==gene))
       if(length(idx)>0){
         classes=c(classes,as.character(mvl[idx,'Variant_Classification']))
         pos=c(pos,as.character(mvl[idx,'HGVSc']))
