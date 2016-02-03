@@ -25,7 +25,7 @@ cnv.dat<-cnv.dat[which(!is.na(cnv.dat$patientId)),]
 patients<-cnv.dat$patientId
 names(patients)<-sapply(cnv.dat$File,function(x) gsub('3096-PBK-','X',gsub('_Final.csv','',x)))
 patients<-sapply(patients,function(x) gsub("CT0*","",x))
-
+names(patients)<-cnv.dat$synapseId
 clnames<-paste(patients,cnv.dat$tissueId)
 names(clnames)<-names(patients)
 
