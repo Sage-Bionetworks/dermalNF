@@ -47,4 +47,9 @@ colnames(baf.sq)<-sids[colnames(baf.sq)]
 write.table(baf.sq,'ascat_tumor_normal_BAF.txt',quote=F,row.names=T,col.names=T)
 
 require(synapseClient)
-synapseStore(File('ascat_tumor_normal_logR.txt',parentId='syn5049702'),executed=list(list(url='')))
+lf=File('ascat_tumor_normal_logR.txt',parentId='syn5049702')
+synStore(lf,executed=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-03/mergeAscatData.R')))
+
+af=File('ascat_tumor_normal_BAF.txt',parentId='syn5049702')
+
+synStore(af,executed=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-03/mergeAscatData.R')))
