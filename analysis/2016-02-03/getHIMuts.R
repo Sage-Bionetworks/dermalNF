@@ -1,6 +1,6 @@
 source("../../bin/WGSData.R")
 #executed this command already
 
-storeMutationFiles()
-storeMutationFiles(impact="MODERATE")
-storeMutationFiles(impact="LOW")
+storeSomMutationFiles(patient='13')
+storeSomMutationFiles(impact="MODERATE",patient='13')
+storeSomMutationFiles(impact="LOW",patient='13')

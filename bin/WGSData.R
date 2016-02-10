@@ -20,7 +20,10 @@ getMutationSummary<-function(){
 
 library(parallel)
 library(data.table)
-storeSomMutationFiles<-function(impact='HIGH'){
+storeSomMutationFiles<-function(impact='HIGH',patient=NA){
+
+   if(!is.na(patient))
+      som.mafs=som.mafs[grep(paste('0',patient,sep=''),som.mafs$entity.patientId),]
 
     allMuts<-lapply(som.mafs$entity.id,function(x){
         res<-synGet(x)
