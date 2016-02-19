@@ -110,6 +110,37 @@ png('violinPlotOfProteins.png',width=800)
 print(p)
 dev.off()
 
+rnaqc='syn5669831'
+protqc='syn5669830'
+scripturl='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-09/figure_4_5_draft.R'
+afiles=list.files('.')
+countfiles=afiles[grep('Count',afiles)]
+fpkmfiles=afiles[grep('Fpkm',afiles)]
+protfiles=afiles[grep('Protein',afiles)]
+
+#now first upload the count files with the count matrix used
+for(file in countfiles){
+  synStore(File(file,parentId=rnaqc),
+           used=list(list(entity='syn5051784',wasExecuted=FALSE),
+                     list(url=scripturl,wasExecuted=TRUE)))
+}
+
+#now the fpkm
+for(file in fpkmfiles){
+  synStore(File(file,parentId=rnaqc),
+           used=list(list(entity='syn5579598',wasExecuted=FALSE),
+                     list(url=scripturl,wasExecuted=TRUE)))
+}
+
+#and the proteins
+for(file in protfiles){
+  synStore(File(file,parentId=protqc),
+           used=list(list(entity='syn5305003',wasExecuted=FALSE),
+                     list(url=scripturl,wasExecuted=TRUE)))
+
+}
+
+
 
 
 

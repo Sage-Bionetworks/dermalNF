@@ -6,6 +6,7 @@ colnames(tab)<-c("CN","Discordance","NumberOfSites","AvMinDepth","Sample_i","Sam
 
 ##now get annotations
 require(synapseClient)
+synapseLogin()
 vcfs=synapseQuery("select name,id,patientID,tissueID from entity where parentId=='syn5522788'")
 vcfs$Patient=sapply(vcfs$entity.patientID,function(x) gsub("CT0+",'',x))
 vcfs$Base=sapply(vcfs$entity.name,function(x) gsub('.vcf','',x,fixed=T))
@@ -38,7 +39,19 @@ jvals=data.frame(Tissue=jtab$Tissue_j,Patient=jtab$Patient_j)
 rownames(jvals)<-jtab$Sample_j
 
 pheatmap(dmat,annotation_row=ivals,cellheight=10,cellwidth=10,annotation_col=jvals,file='sampleDiscordance.png')
+pheatmap(dmat,annotation_row=ivals,cellheight=10,cellwidth=10,annotation_col=jvals,file='sampleDiscordance.pdf')
 
 numsites=acast(newtab,Sample_j~Sample_i,value.var='NumberOfSites')
 pheatmap(numsites,annotation_row=ivals,cellheight=10,cellwidth=10,annotation_col=jvals,file='sampNumOfsites.png')
+pheatmap(numsites,annotation_row=ivals,cellheight=10,cellwidth=10,annotation_col=jvals,file='sampNumOfsites.pdf')
+
+
+for (file in c('sampleDiscordance','sampNumOfsites')){
+  for(suff in c('.pdf','.png')){  
+    fname=paste(file,suff,sep='')
+    synStore(File(fname,parentId='syn5669832'),
+                 used=list(list(entity='syn5669991',wasExecuted=FALSE),
+                           list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-09/replotConcordances.R',wasExecuted=TRUE)))
+  }
+}
 

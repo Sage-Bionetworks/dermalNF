@@ -7,8 +7,6 @@ source("../../bin/dermalNFData.R")
 library(ggplot2)
 #library(dplyr)
 
-
-
 ##figure 3 focuses on SNP data
 cnv_annotes=cnv_annotations()
 
@@ -37,4 +35,13 @@ pb=ggplot(baf,aes(y=B.Allele.Freq,x=Sample.ID))+geom_violin(aes(fill=Patient,col
 png('violinBafPlot.png',width=800)
 print(pb)
 dev.off()
+
+snpqc='syn5669811'
+scripturl='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-09/figure_3_draft.R'
+
+for(file in c('violinBafPlot.png','violinLrrPlot.png')){
+  synStore(File(file,parentId=snpqc),
+           used=list(
+                     list(url=scripturl,wasExecuted=TRUE)))
+}
 

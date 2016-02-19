@@ -17,6 +17,7 @@ cnv_annotations<-function(){
     snpfiles=synapseQuery('SELECT id,name,patientID,tissueType,tissueID,alternateTumorID FROM entity where parentId=="syn5004874"')
 
     names(snpfiles)<-c('tissueType','patientId','alternateTumorId','File','tissueId','synapseId')
+    snpfiles=snpfiles[which(!is.na(snpfiles$patientId)),]
     return(snpfiles)
 }
 
@@ -116,6 +117,12 @@ cnv_segmented_by_gene<-function(){
     return(tab)
 }
 
+cnv_segmented_by_region<-function(){
+  si='syn5462067'
+  fn<-synGet(si)
+  tab<-read.table(fn@filePath,header=T)
+  return(tab)
+}
 #################
 #PROTEOMICS
 #################
