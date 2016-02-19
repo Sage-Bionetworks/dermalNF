@@ -92,7 +92,12 @@ clusterData <- function(datExpr,prefix=''){
 
     dev.off()
     ##which clustering should i return?
-  return(list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM))
+    ret=list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM)
+    tab<-as.data.frame(ret)
+    tab$Gene=colnames(datExpr)
+    write.table(tab,file=paste('WGCNA_',prefix,'ClusterAssignment.tsv',sep=''),sep='\t',row.names=F)
+
+    return(ret)
 }
 
 
@@ -139,6 +144,8 @@ evalEigenModules<-function(datExpr,colorh1,pids=NA,prefix=''){
     barplot(ME, col=which.module, main="", cex.main=2,
             ylab="eigengene expression",xlab="Patient Sample")
     dev.off()
-  }
+}
+  rownames(datME)<-rownames(datExpr)
+  write.table(paste(prefix,'eigenModules.tsv',sep=''),sep='\t')
   return(datME)
 }
