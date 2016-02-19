@@ -43,4 +43,4 @@ write.table(subset(udf,Mutation_Status=="Germline"),file='germlineCancerGeneMuta
 write.table(subset(udf,Mutation_Status=="Somatic"),file='somaticCancerGeneMutationsInDermals.tsv',sep='\t',row.names=F,quote=F)
 
 for(f in c("allCancerGeneMutationsInDermals.tsv","germlineCancerGeneMutationsInDermals.tsv","somaticCancerGeneMutationsInDermals.tsv"))
-    synStore(File(f,parentId='syn5605256'),executed=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-01-27/mutsInCancerGenes.R')),used=list(list(entity='syn5610781')))
+    synStore(File(f,parentId='syn5605256'),executed=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-18/mutsInCancerGenes.R')),used=list(list(entity='syn5610781')))
