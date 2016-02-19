@@ -26,13 +26,13 @@ cl.pids=cl.patients$patient
 names(cl.pids)<-cl.patients$sample
 
 #' do WGCNA analysis to get clusters of gene modules
-#' 
+#'
 clusterData <- function(datExpr,prefix=''){
 
     ADJ1=abs(cor(datExpr,use="p"))^6
     k=softConnectivity(datE=datExpr,power=6)
     pdf(paste(prefix,'WGCNAClustering.pdf',sep=''),10,5)
-    
+
     #sizeGrWindow(10,5)
     par(mfrow=c(1,2))
     hist(k)
@@ -44,16 +44,16 @@ clusterData <- function(datExpr,prefix=''){
 
     hierADJ=hclust(as.dist(dissADJ), method="average" )
 
-    ###CUTTING TREEE    
+    ###CUTTING TREEE
     ##first experiment with various ways of labeling branches
     branch.number=cutreeDynamic(hierADJ,method="tree")
     # This function transforms the branch numbers into colors
     colorDynamicADJ=labels2colors(branch.number )
-    
+
    #sizeGrWindow(10,5);
   #  plotDendroAndColors(hierADJ, colors=colorDynamicADJ, dendroLabels = FALSE, hang = 0.03,
    #                     main = "Gene hierarchical clustering dendrogram and assigned colors" )
-    
+
     ##now restrict by module size
     colorStaticADJ=as.character(cutreeStaticColor(hierADJ, cutHeight=.99, minSize=20))
     # Plot the dendrogram with module colors
@@ -61,8 +61,8 @@ clusterData <- function(datExpr,prefix=''){
   #  plotDendroAndColors(hierADJ, colors = data.frame(colorStaticADJ),
   #                      dendroLabels = FALSE, abHeight = 0.99,
   #                      main = "Gene dendrogram and module colors")
-    
-    
+
+
     ##now do the hybrid approach
     colorDynamicHybridADJ=labels2colors(cutreeDynamic(hierADJ,distM= dissADJ,
                                                       cutHeight = 0.998, deepSplit=2, pamRespectsDendro = FALSE))
@@ -72,12 +72,12 @@ clusterData <- function(datExpr,prefix=''){
                                           colorDynamicADJ, colorDynamicHybridADJ),
                         dendroLabels = FALSE, marAll = c(0.2, 8, 2.7, 0.2),
                         main = "Gene dendrogram and module colors")
-    
+
     ###TOM analysis
-    #topology based distance     
+    #topology based distance
     dissTOM=TOMdist(ADJ1)
     hierTOM = hclust(as.dist(dissTOM),method="average")
-    
+
     colorStaticTOM = as.character(cutreeStaticColor(hierTOM, cutHeight=.99, minSize=20))
     colorDynamicTOM = labels2colors (cutreeDynamic(hierTOM,method="tree"))
     colorDynamicHybridTOM = labels2colors(cutreeDynamic(hierTOM, distM= dissTOM , cutHeight = 0.998,
@@ -89,9 +89,9 @@ clusterData <- function(datExpr,prefix=''){
                                           colorDynamicTOM, colorDynamicHybridTOM),
                         dendroLabels = FALSE, marAll = c(1, 8, 3, 1),
                         main = "Gene dendrogram and module colors, TOM dissimilarity")
-    
+
     dev.off()
-    ##which clustering should i return? 
+    ##which clustering should i return?
   return(list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM))
 }
 
@@ -113,24 +113,24 @@ getEnrichment<-function(datExpr,colorh1,prefix){
 #'Given an expression matrix and a color assignment from the clustering
 #'do some analysis
 evalEigenModules<-function(datExpr,colorh1,pids=NA,prefix=''){
-  
+
   datME=moduleEigengenes(datExpr,colorh1)$eigengenes
   if(is.na(pids))
     pids=rownames(datExpr)
-  
+
   dissimME=(1-t(cor(datME, method="p")))/2
   hclustdatME=hclust(as.dist(dissimME), method="average" )
   # Plot the eigengene dendrogram
   par(mfrow=c(1,1))
   plot(hclustdatME, main="Clustering tree based of the module eigengenes")
-  
+
   ##now try to plot clusters
   which.module='orange'
   #sizeGrWindow(8,7);
  # which.module="green"
   for(which.module in unique(colorh1)){
     ME=datME[, paste("ME",which.module, sep="")]
-    pdf(paste(prefix,which.color,'moduleInGeneExpression.pdf',sep=''))
+    pdf(paste(prefix,which.module,'moduleInGeneExpression.pdf',sep=''))
     par(mfrow=c(2,1), mar=c(0.3, 5.5, 3, 2))
     plotMat(t(scale(datExpr[,colorh1==which.module ]) ),
             nrgcols=30,rlabels=F,rcols=which.module,clabels=pids,
@@ -142,4 +142,3 @@ evalEigenModules<-function(datExpr,colorh1,pids=NA,prefix=''){
   }
   return(datME)
 }
-
