@@ -324,6 +324,13 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
 
 }
 
+fpkm_annotations<-function(x){
+  fpkm_files=synQuery("select sampleID,tissueID,patientID from entity where parentId=='syn5492805'")
+  colnames(fpkm_files)<-c('patient','sample','tissue','entity')
+  fpkm_files$patient=sapply(fpkm_files$patient,function(x) gsub('CT0+','',x))
+  fpkm_files$sample=sapply(fpkm_files$sample,function(x) paste('X',gsub("-",'.',x),sep=''))
+  fpkm_files
+}
 
 #we can also get the FPKM
 rna_fpkm_matrix<-function(byIsoform=FALSE){
