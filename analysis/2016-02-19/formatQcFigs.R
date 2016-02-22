@@ -26,14 +26,14 @@ makeCNVClusterPlot<-function(){
                       colors=cbind(rainbow(13)[as.numeric(patients[colnames(seg.by.region)])],
                                    c('black','grey')[as.numeric(as.factor(tissue)[colnames(seg.by.region)])]),
                       dendroLabels=paste("Patient",patients[colnames(seg.by.region)]),cex.dendroLabels=0.7,
-                        groupLabels=c('Patient','Tissue'),main='Correlation of CNA Segements by region')
+                        groupLabels=c('Patient','Tissue'),main='Correlation of CNA Segments by region')
   dev.off()
   png("medianLogRByRegion_correlation.png")
   plotDendroAndColors(hclust(as.dist(1-cor(seg.by.region,use='p'))),
                       colors=cbind(rainbow(13)[as.numeric(patients[colnames(seg.by.region)])],
                                    c('black','grey')[as.numeric(as.factor(tissue)[colnames(seg.by.region)])]),
                       dendroLabels=paste("Patient",patients[colnames(seg.by.region)]),cex.dendroLabels=0.7,
-                      groupLabels=c('Patient','Tissue'),main='Correlation of CNA Segements by region')
+                      groupLabels=c('Patient','Tissue'),main='Correlation of CNA Segments by region')
   dev.off()
   
   synStore(File('medianLogRByRegion_correlation.png',parentId='syn5669811'),
