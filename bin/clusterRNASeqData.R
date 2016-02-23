@@ -38,6 +38,7 @@ clusterData <- function(datExpr,prefix=''){
     hist(k)
     scaleFreePlot(k, main="Check scale free topology\n")
 
+    fullDatExpr=datExpr
     datExpr=datExpr[, rank(-k,ties.method="first" )<=3600]
     dissADJ=1-ADJ1
 
@@ -94,7 +95,7 @@ clusterData <- function(datExpr,prefix=''){
     ##which clustering should i return?
     ret=list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM)
     tab<-as.data.frame(ret)
-    tab$Gene=colnames(datExpr)
+    tab$Gene=colnames(fullDatExpr)
     write.table(tab,file=paste('WGCNA_',prefix,'ClusterAssignment.tsv',sep=''),sep='\t',row.names=F)
 
     return(ret)
