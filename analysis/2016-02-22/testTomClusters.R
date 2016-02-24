@@ -6,7 +6,7 @@ fc.clust=clusterData(t(fc.matrix),'featureCounts')
 
 tab<-as.data.frame(fc.clust)
 tab$Gene=rownames(fc.matrix)
-write.table(tab,file='WGCNA_featureCountsClusterAssignment.tsv',sep='\t',row.names=F)
+write.table(tab,file='WGCNA_featureCountsTOMClusterAssignment.tsv',sep='\t',row.names=F)
 
 exlist=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-02-18/testClustering.R',wasExecuted=TRUE),
              list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/clusterRNASeqData.R',wasExecuted=TRUE))

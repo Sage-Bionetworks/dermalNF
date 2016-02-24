@@ -1,14 +1,53 @@
-##process WGS data
+##General set of commands to analyze and process WGS data
+##
 
 library(synapseClient)
 synapseLogin()
-
-allmafs<-synapseQuery("select * from entity where parentId=='syn5522808'")
-som.mafs<-allmafs[which(allmafs$entity.tissueType=='tumorVsNormal'),]
-gl.mafs<-allmafs[which(allmafs$entity.tissueType=='PBMC'),]
+library(data.table)
 
 
-getMutationSummary<-function(){
+##read in all cancer gene mutations
+if(!exists('cancer.gene.muts'))
+  cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
+
+#'Define function to plot gene mutations across patients
+#'@param mutTable - table of mutations in cBio format
+#'
+panPatientPlots<-function(mutTable=cancer.mut.genes,minPatients=2,notIncluded=c()){
+  ##first remove genes
+  if(length(notIncluded)>0){
+    print(paste("Removing",length(which(mutTable$Mutation_Type%in%notIncluded)),'mutations that are',paste(notIncluded,collapse='or')))
+    mutTable=mutTable[-which(mutTable%Mutation_Type%in%notIncluded),]  
+  }
+  
+  
+}
+
+
+#' Get all MAF files that were calculated using VCF2MAF
+#' @param mut.type can be 'all' (default),'somatic' or 'germline'
+#' @return table describing entities of  all MAF files on synapse
+getMAFs<-function(mut.type='all'){
+
+  allmafs<-synapseQuery("select * from entity where parentId=='syn5522808'")
+  som.mafs<-allmafs[which(allmafs$entity.tissueType=='tumorVsNormal'),]
+  gl.mafs<-allmafs[which(allmafs$entity.tissueType=='PBMC'),]
+
+  if(tolower(mut.type)=='all')
+    return(allmafs)
+  else if(tolower(mut.type)=='somatic')
+    return(som.mafs)
+  else if (tolower(mut.type)=='germline')
+    return(gl.mafs)
+  else
+    print("mut.type must be either 'all','somatic',or 'germline'")
+  return(NULL)
+}
+
+#'getMutationSummary opens all maf files and loads into list
+#'@param allmafs - list of MAFs to summarize
+#'@return list of tables
+getMutationSummary<-function(allmafs=getMAFs('all')){
 
     allMuts<-sapply(allmafs$entity.id,function(x){
         res<-synGet(x)
@@ -18,9 +57,15 @@ getMutationSummary<-function(){
 }
 #summary(tab$Consequence)
 
-library(parallel)
-library(data.table)
-storeSomMutationFiles<-function(impact='HIGH',patient=NA){
+#library(parallel)
+
+
+#'Takes original MAF files and filters by predicted 'impact' and/or patient.  Will include both
+#'Somatic and Germline mutations, because they are both in the original MAF files for each tumor
+#'@param som.mafs  MAFs to be analyzed - the somatic files include both the somatic and germline
+#'@param impact can be "HIGH",'MODERATE' or 'LOW'
+#'@param patient
+storeSomMutationFiles<-function(som.mafs=getMAFs('somatic'),impact='HIGH',patient=NA){
 
    if(!is.na(patient))
       som.mafs=som.mafs[grep(paste('0',patient,sep=''),som.mafs$entity.patientId),]
@@ -52,43 +97,16 @@ storeSomMutationFiles<-function(impact='HIGH',patient=NA){
     return(allMuts)
 }
 
-##now do the same for the germline files
-storeGermlineMutationFiles<-function(impact='HIGH'){
-
-  allMuts<-lapply(gl.mafs$entity.id,function(x){
-    res<-synGet(x)
-    # if(res@annotations$tissueType=='PBMC')
-    #      return(NULL)
-    fp=res@filePath
-    fname=paste('patient',gsub('CT0+','',res@annotations$patientId),'tissue',res@annotations$tissueID,impact,'impact_germlineMutations.maf',sep='_')
-    if(! file.exists(fname)){
-      tab<-as.data.frame(fread(paste('zcat',fp)))
-      #dont filter by consequence
-      #vars<-tab[which(tab$Consequence%in%mutClasses),]
-      if(!is.na(impact))
-        vars<-tab[which(tab$IMPACT==impact),]
-      else
-        vars<-tab
-      print(length(which(vars$Hugo_Symbol=='NF1')))#summary(vars$Hugo_Symbol))
-
-      write.table(vars,file=fname,row.names=F,quote=F)
-    }
-    sf=File(fname,parentId='syn5580983')
-    annotations(sf)<-res@annotations
-    executed(sf)<-'https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData.R'
-    synStore(sf)
-    return (vars)
-  })#,mc.cores=4)
-  return(allMuts)
-}
-
-getAllMutData<-function(allsoms){
+#'getAllMutData is a function that will take a mutation maf table and filter
+#'by whether or not a particular mutation is somatic or germline
+#'@param allsoms is a table of all mutations of a particular gene, impact or patient
+#'@return list of two tables 'Somatic' is table of somatic mutations while 'Germline' is table of germline
+getAllMutData<-function(allsoms=getMAFs('all')){
   ##this function will get the number of 'high impact' somatic mutations as well
   ##as the
    #try to create matrix.
   ##first read in all files
-#  if(exists("som.germ"))
-#    return(som.germ)
+
   allmuts<-lapply(allsoms$entity.id,function(x) {
     print(paste('read in',x))
     read.table(synGet(x)@filePath,sep=' ',header=T,quote='"')
@@ -110,192 +128,122 @@ getAllMutData<-function(allsoms){
   return(som.germ)
 }
 
-getSomaticVars<-function(impact='HIGH',top=100){
-  ##DEPRACATED
-  allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
-  allsoms=allsoms[grep(impact,allsoms$entity.name),]
 
-  som.germ=getAllMutData(allsoms)
-  classes=c()
-  pats<-c()
-  tissue=c()
-  pos=c()
-  ppos=c()
-  mutType=c()
-  genes=c()
-  for(i in 1:nrow(allsoms)){
-    x=allsoms[i,]
+#'getMutationStatsForGene obtains all mutations for a particular gene of interest across all patients
+#'@param gene is the gene symbol in question
+#'@param impact is a list of which mutations to include, defaults to all ('HIGH','MODERATE' and 'LOW')
+#'@param doPlot: if set to true, will plot some basic statistics about where and when this mutation occurs
+#'@param som.germ - the MAF file tables separated by whether or not the mutation is somatic or germline
+getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,som.germ=getAllMutData()){
 
-
-    arr=unlist(strsplit(x[['entity.name']],split='_'))
-    mv=som.germ[[x[['entity.id']]]]
-    #first add somatic
-    genes=c(genes,as.character(mv$Somatic[,'Hugo_Symbol']))
-    classes=c(classes,as.character(mv$Somatic[,'Variant_Classification']))
-    pos=c(pos,as.character(mv$Somatic[,'HGVSc']))
-    ppos=c(ppos,as.character(mv$Somatic[,'HGVSp_Short']))
-    pats=c(pats,rep(arr[2],nrow(mv$Somatic)))
-    tissue=c(tissue,rep(arr[4],nrow(mv$Somatic)))
-    mutType=c(mutType,rep('Somatic',nrow(mv$Somatic)))
-    #then germline
-    genes=c(genes,as.character(mv$Germline[,'Hugo_Symbol']))
-    classes=c(classes,as.character(mv$Germline[,'Variant_Classification']))
-    pos=c(pos,as.character(mv$Germline[,'HGVSc']))
-    ppos=c(ppos,as.character(mv$Germline[,'HGVSp_Short']))
-    pats=c(pats,rep(arr[2],nrow(mv$Germline)))
-    tissue=c(tissue,rep(arr[4],nrow(mv$Germline)))
-    mutType=c(mutType,rep('Germline',nrow(mv$Germline)))
-
-
-  }
-  df=data.frame(Gene=genes,Patient=pats,Mutation_Type=mutType,Position=pos,Tissue=tissue,MutationClass=classes)
-
-}
-
-getMutationsStatsByPatientAndGene<-function(patient='11',gene='NF1'){
-  allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
-  print(paste('Selecting from',nrow(allsoms),'mutation files'))
-  allsoms=allsoms[grep(paste('patient',patient,sep='_'),allsoms$entity.name),]
-  print(paste("Found",nrow(allsoms),'for patient',patient))
-
-  impacts<-c("LOW","MODERATE","HIGH")
-  som.germ=lapply(impacts,function(x) getAllMutData(allsoms[grep(x,allsoms$entity.name),]))
-  names(som.germ)=impacts
-
-  classes=c()
-  imps<-c()
-  tissue=c()
-  pos=c()
-  ppos=c()
-  mutType=c()
-  dbs=c()
-  exs=c()
-
-  ##now assemble data for gene, sample
-  for(i in impacts){
-    for(tiss in names(som.germ[[i]])){
-      ##Get somatic
+  ##first check to see if we have the file already on synapse
+  if(gene%in%cancer.gene.muts$Hugo_Symbol){
+    print(paste('Found gene',gene,' already processed, will analyze mutations of all impact (impact argument ignored'))
+    df=subset(cancer.gene.muts,Hugo_Symbol==gene)
+  }else{
+    if(is.null(som.germ)){
+      allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
+      print(paste('Selecting from',nrow(allsoms),'mutation files'))
+      allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
+      print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
+      som.germ=getAllMutData(allsoms)
+    #df<-apply(allsoms,1,function(x){
+    }
+    classes=c()
+    pats<-c()
+    tissue=c()
+    pos=c()
+    ppos=c()
+    mutType=c()
+    t_depth=c()
+  
+    mut_chrom=c()
+    mut_start=c()
+    mut_end=c()
+    ref_al=c()
+    var_al=c()
+    sid=c()
+    for(i in 1:nrow(allsoms)){
+      x=allsoms[i,]
+  
+      arr=unlist(strsplit(x[['entity.name']],split='_'))
+      mv=som.germ[[x[['entity.id']]]]
       for(mt in c("Somatic","Germline")){
-        gmat=som.germ[[i]][[tiss]][[mt]]
-        mvals=which(gmat[,'Hugo_Symbol']==gene)
-        if(length(mvals)>0){
-          classes=c(classes,as.character(gmat[mvals,'Variant_Classification']))
-          pos=c(pos,as.character(gmat[mvals,'HGVSc']))
-          ppos=c(ppos,as.character(gmat[mvals,'HGVSp_Short']))
-          exs=c(exs,as.character(gmat[mvals,'Exon_Number']))
-          imps=c(imps,rep(i,length(mvals)))
-          dbs<-c(dbs,as.character(gmat[mvals,'dbSNP_RS']))
-          tissue=c(tissue,rep(tiss,length(mvals)))
-          mutType=c(mutType,rep(mt,length(mvals)))
+        mvl=mv[[mt]]
+        idx=c()
+        try(idx<-which(mvl[,'Hugo_Symbol']==gene))
+        if(length(idx)>0){
+          classes=c(classes,as.character(mvl[idx,'Variant_Classification']))
+          pos=c(pos,as.character(mvl[idx,'HGVSc']))
+          ppos=c(ppos,gsub('p.','',as.character(mvl[idx,'HGVSp_Short']),fixed=T))
+          t_depth=c(t_depth,as.numeric(as.character(mvl[idx,'t_depth'])))
+    	    if(mt=='Somatic')
+            sid=c(sid,rep(paste(arr[1:4],collapse='_'),length(idx)))
+    	    else
+    	      sid=c(sid,rep(paste(arr[1:2],collapse='_'),length(idx)))
+          mut_chrom=c(mut_chrom,as.character(mvl[idx,'Chromosome']))
+          mut_start=c(mut_start,mvl[idx,'Start_Position'])
+          mut_end=c(mut_end,mvl[idx,'End_Position'])
+          ra=as.character(mvl[idx,'Reference_Allele'])
+          ref_al=c(ref_al,ra)
+          var_al=c(var_al,apply(mvl[idx,grep('_Allele',colnames(mvl))[1:3]],1,function(y){ if(y[1]!=y[2]) return(y[2]) else return(y[3])}))
+  
+          pats=c(pats,rep(arr[2],length(idx)))
+          tissue=c(tissue,rep(arr[4],length(idx)))
+          mutType=c(mutType,rep(mt,length(idx)))
         }
+  
       }
     }
-  }
-  df=data.frame(dbSNP=dbs,Exon=exs,Impacts=imps,Mutation_Type=mutType,Position=pos,Tissue=tissue,MutationClass=classes)
-
-  return(df)
-}
-
-
-##primary function to get mutation statistics for gene
-getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=TRUE,som.germ=NULL){
-
- if(is.null(som.germ)){
-  allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
-  print(paste('Selecting from',nrow(allsoms),'mutation files'))
-  allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
-  print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
-  som.germ=getAllMutData(allsoms)
-  #df<-apply(allsoms,1,function(x){
- }
-  classes=c()
-  pats<-c()
-  tissue=c()
-  pos=c()
-  ppos=c()
-  mutType=c()
-  t_depth=c()
-
-  mut_chrom=c()
-  mut_start=c()
-  mut_end=c()
-  ref_al=c()
-  var_al=c()
-  sid=c()
-  for(i in 1:nrow(allsoms)){
-    x=allsoms[i,]
-
-    arr=unlist(strsplit(x[['entity.name']],split='_'))
-    mv=som.germ[[x[['entity.id']]]]
-    for(mt in c("Somatic","Germline")){
-      mvl=mv[[mt]]
-      idx=c()
-      try(idx<-which(mvl[,'Hugo_Symbol']==gene))
-      if(length(idx)>0){
-        classes=c(classes,as.character(mvl[idx,'Variant_Classification']))
-        pos=c(pos,as.character(mvl[idx,'HGVSc']))
-        ppos=c(ppos,gsub('p.','',as.character(mvl[idx,'HGVSp_Short']),fixed=T))
-        t_depth=c(t_depth,as.numeric(as.character(mvl[idx,'t_depth'])))
-	if(mt=='Somatic')
-           sid=c(sid,rep(paste(arr[1:4],collapse='_'),length(idx)))
-	else
-	   sid=c(sid,rep(paste(arr[1:2],collapse='_'),length(idx)))	   
-        mut_chrom=c(mut_chrom,as.character(mvl[idx,'Chromosome']))
-        mut_start=c(mut_start,mvl[idx,'Start_Position'])
-        mut_end=c(mut_end,mvl[idx,'End_Position'])
-        ra=as.character(mvl[idx,'Reference_Allele'])
-        ref_al=c(ref_al,ra)
-        var_al=c(var_al,apply(mvl[idx,grep('_Allele',colnames(mvl))[1:3]],1,function(y){ if(y[1]!=y[2]) return(y[2]) else return(y[3])}))
-
-        pats=c(pats,rep(arr[2],length(idx)))
-        tissue=c(tissue,rep(arr[4],length(idx)))
-        mutType=c(mutType,rep(mt,length(idx)))
-      }
-
+    if(length(pats)==0)
+      return(NULL)
+    df=data.frame(Hugo_Symbol=rep(gene,length(mutType)), Protein_Change=ppos,
+        Sample_ID=sid,
+        Mutation_Status=mutType,Chromosome=mut_chrom,
+        Start_Position=mut_start,End_Position=mut_end,
+        Reference_Allele=ref_al,Variant_Allele=var_al,
+        Mutation_Type=classes,TumorDepth=t_depth,
+        Position=pos,Tissue=tissue,Patient=pats)
+  
+    
+    ##the mindf files are visible via cbioportal.
+    mindf=unique(df[,-c(11,13,14)])
+    write.table(mindf,file=paste(gene,paste(impact,collapse='_'),'mutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+    #somatic only
+    if(length(which(mutType=='Somatic'))>0){
+  	  red.df<-subset(mindf,Mutation_Status=="Somatic")
+    	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'SOMATICmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
     }
-  }
-  if(length(pats)==0)
-    return(NULL)
-  df=data.frame(Hugo_Symbol=rep(gene,length(mutType)), Protein_Change=ppos,
-      Sample_ID=sid,
-      Mutation_Status=mutType,Chromosome=mut_chrom,
-      Start_Position=mut_start,End_Position=mut_end,
-      Reference_Allele=ref_al,Variant_Allele=var_al,
-      Mutation_Type=classes,TumorDepth=t_depth,
-      Position=pos,Tissue=tissue,Patient=pats)
+    #germline only
+    if(length(which(mutType=='Germline'))>0){
+    	red.df<-subset(mindf,Mutation_Status=='Germline')
+  	  write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'GERMLINEmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
+    }
+    df$Position=as.character(df$Position)
+    mns=grep("NN+",df$Position)
+    df$Position[mns]=unlist(sapply(df$Position[mns],function(x) {
+      ml=attr(regexpr("N+",x),'match.length')
+      gsub("N+",paste("N",ml,sep=''),x)
+          }))
+    ins=grep("GGTTACTCTGTTTGATTCTCGGC",df$Position)
+    df$Position[ins]<-unlist(sapply(df$Position[ins],function(x) gsub("GGTTACTCTGTTTGATTCTCGGC","GGT...",x)))
+    # df$Sample_ID=as.numeric(as.character(df$Sample_ID))
+    impact=paste(impact,collapse='_or_')
 
-  mindf=unique(df[,-c(11,13,14)])
-  write.table(mindf,file=paste(gene,paste(impact,collapse='_'),'mutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
-  if(length(which(mutType=='Somatic'))>0){
-	red.df<-subset(mindf,Mutation_Status=="Somatic")
-  	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'SOMATICmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
   }
-  if(length(which(mutType=='Germline'))>0){
-  	red.df<-subset(mindf,Mutation_Status=='Germline')
-	write.table(red.df,file=paste(gene,paste(impact,collapse='_'),'GERMLINEmutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
-  }
-  df$Position=as.character(df$Position)
-  mns=grep("NN+",df$Position)
-  df$Position[mns]=unlist(sapply(df$Position[mns],function(x) {
-    ml=attr(regexpr("N+",x),'match.length')
-    gsub("N+",paste("N",ml,sep=''),x)
-        }))
-  ins=grep("GGTTACTCTGTTTGATTCTCGGC",df$Position)
-  df$Position[ins]<-unlist(sapply(df$Position[ins],function(x) gsub("GGTTACTCTGTTTGATTCTCGGC","GGT...",x)))
-  # df$Sample_ID=as.numeric(as.character(df$Sample_ID))
-  require(ggplot2)
-  impact=paste(impact,collapse='_or_')
   if(doPlot){
-   pdf(paste('numberOf',impact,'impact',gene,'MutationsPerPatient.pdf',sep=''))
-  p<-ggplot(df)+geom_bar(aes(Sample_ID,fill=Mutation_Status),position='dodge')
-  p<-p+ggtitle(paste('Number of',impact,'impact  mutations in',gene))
-  print(p)
-  dev.off()
+    require(ggplot2)
+    
+    pdf(paste('numberOf',impact,'impact',gene,'MutationsPerPatient.pdf',sep=''))
+    p<-ggplot(df)+geom_bar(aes(Sample_ID,fill=Mutation_Status),position='dodge')
+    p<-p+ggtitle(paste('Number of',impact,'impact  mutations in',gene))
+    print(p)
+    dev.off()
 
   ##now do class of mutation
-   pdf(paste('typeOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
-   p<-ggplot(unique(subset(df,Mutation_Status=='Germline')))+geom_bar(aes(Sample_ID,fill=Mutation_Type),position='dodge')
-   p<-p+ggtitle(paste('Type of Germline mutations in',gene))
+    pdf(paste('typeOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
+    p<-ggplot(unique(subset(df,Mutation_Status=='Germline')))+geom_bar(aes(Sample_ID,fill=Mutation_Type),position='dodge')
+    p<-p+ggtitle(paste('Type of Germline mutations in',gene))
     print(p)
     dev.off()
 
@@ -308,47 +256,72 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
   ##now try to classify the position of the mutation for each gene
     ##now do class of mutation
 
-  pdf(paste('locationOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
-  p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Sample_ID,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
-  print(p)
-  dev.off()
-  pdf(paste('locationOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
-  p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Sample_ID,fill=Position),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
-  print(p)
-  dev.off()
+    pdf(paste('locationOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
+    p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Sample_ID,fill=Protein_Change),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
+    print(p)
+    dev.off()
+    pdf(paste('locationOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
+    p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Sample_ID,fill=Protein_Change),position='dodge')+ggtitle(paste(gene,'Mutation Position'))
+    print(p)
+    dev.off()
 
   ##frequency of hits
-  pdf(paste('frequencyOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
-  p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Position,fill=Sample_ID))+ggtitle(paste(gene,'Mutation Position'))+theme(axis.text.x=element_text(angle = -90, hjust = 0))
-  print(p)
-  dev.off()
-  pdf(paste('frequencyOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
-  p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Position,fill=Sample_ID))+ggtitle(paste(gene,'Mutation Position'))+theme(axis.text.x=element_text(angle = -90, hjust = 0))
-  print(p)
-  dev.off()
-
+    pdf(paste('frequencyOf',impact,'impact',gene,'SomaticMutationsPerPatient.pdf',sep=''))
+    p=ggplot(subset(df,Mutation_Status=='Somatic'))+geom_bar(aes(Protein_Change,fill=Sample_ID))+ggtitle(paste(gene,'Mutation Position'))+theme(axis.text.x=element_text(angle = -90, hjust = 0))
+    print(p)
+    dev.off()
+    pdf(paste('frequencyOf',impact,'impact',gene,'GermlineMutationsPerPatient.pdf',sep=''))
+    p=ggplot(subset(df,Mutation_Status=='Germline'))+geom_bar(aes(Protein_Change,fill=Sample_ID))+ggtitle(paste(gene,'Mutation Position'))+theme(axis.text.x=element_text(angle = -90, hjust = 0))
+    print(p)
+    dev.off()
   }
+  
   return(df)
 }
 
-heatmapFromMutDf<-function(df,fname=''){
-  muts<-unique(df$Position)
+#'Create a heatmap of tumor depth for a single-gene data frame
+#'@param df is a data frame containing a single gene derived from
+#'getMutationStatsForGeen
+#'@param fname is name of output file
+heatmapFromMutDf<-function(df=getMutationStatsForGene(gene='NF1'),fname='NF1mutations.png'){
+  require(reshape2)
+  require(dplyr)
   require(pheatmap)
-  samp<-unique(apply(df,1,function(x) paste('Patient',paste(x[c('Patient','Tissue')],collapse='_samp_'),sep='_')))
-  mmat=sapply(muts,function(x){
-    mr=which(df$Position==x)
-    sapply(samp,function(y){
-      arr=unlist(strsplit(y,split='_'))
-      rv=intersect(mr,intersect(which(df$Patient==arr[2]),which(df$Tissue==arr[4])))
-    #  print(rv)
-      if(length(rv)==1)
-        return(as.numeric(as.character(df[rv,'TumorDepth'])))
-      else
-        return(0)
-    })})
-  ##now get the annotation for each mutation
-  mut_ann=sapply(colnames(mmat),function(x) as.character(df[match(x,as.character(df$Position)),'MutationClass']))
-  mmat<-mmat[order(rownames(mmat)),]
-  mmat<-mmat[,order(colSums(mmat))]
-  pheatmap(mmat,cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=fname)
+  
+  ##first start with matrix of counts
+  countmat=df %>% group_by(Sample_ID,Protein_Change) %>% summarize(Count=n()) %>% acast(Sample_ID~Protein_Change,value.var='Count',fill=0)
+  mut_ann=sapply(colnames(countmat),function(x) as.character(df[match(x,as.character(df$Protein_Change)),'Mutation_Type']))
+  countmat<-countmat[order(rowSums(countmat)),]
+  countmat<-countmat[,order(colSums(countmat))]
+  
+  ##now separate out countmap by germline and somatic
+ # par(mfrow=c(2,1))
+  soms=grep('tissue',rownames(countmat))
+  pheatmap(countmat[soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionSomaticCount',fname,sep=''))
+  pheatmap(countmat[-soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep=''))
+  
+  
+  ##then separate out by tumor type
+  types=unique(df$Mutation_Type)
+  type.nums=seq(1,length(types))
+  tdf=data.frame(TumorType=types,Numeric=type.nums)
+  df$Numeric_Mut=tdf$Numeric[match(df$Mutation_Type,tdf$TumorType)]
+  
+  typemat= acast(df,Sample_ID~Protein_Change,value.var='Numeric_Mut',fill=0)
+  typemat<-typemat[order(rowSums(typemat)),order(apply(typemat,2,function(x) mean(x[which(x>0)])))]
+  soms=grep('tissue',rownames(typemat))
+  
+  pheatmap(typemat[soms,],color = c('white',rainbow(length(types))),
+           cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
+           legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
+           filename=paste('positionTypeSomatic',fname,sep=''))
+  
+  pheatmap(typemat[-soms,],color = c('white',rainbow(length(types))),
+           cluster_rows=F,cluster_cols=F,
+           cellheight=10,cellwidth=10,
+           legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,filename=paste('positionTypeGermline',fname,sep=''))
+  
+
 }
+
+
