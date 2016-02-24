@@ -27,22 +27,41 @@ names(cl.pids)<-cl.patients$sample
 
 #' do WGCNA analysis to get clusters of gene modules
 #'
-clusterData <- function(datExpr,prefix=''){
+clusterData <- function(datExpr,prefix='',do.signed=FALSE,filterBySD=FALSE){
 
-    ADJ1=abs(cor(datExpr,use="p"))^6
-    k=softConnectivity(datE=datExpr,power=6)
+
     pdf(paste(prefix,'WGCNAClustering.pdf',sep=''),10,5)
+    fullDatExpr=datExpr
+
+    #filter by SD/cov
+    if(filterBySD){
+        k=apply(datExpr,2,sd,na.rm=T)
+        prefix=paste(prefix,'filteredBySd',sep='_')
+        datExpr=datExpr[,rank(k,decreasing=TRUE)<=5000]
+
+    }else{
+        k=softConnectivity(datE=datExpr,power=6)
+        par(mfrow=c(1,2))
+        hist(k)
+        scaleFreePlot(k, main="Check scale free topology\n")
+        prefix=paste(prefix,'filterByConn',sep='_')
+        datExpr=datExpr[, rank(-k,ties.method="first" )<=5000]
+
+    }
+
+    ##now compare signed vs. unsigned
+    if(do.signed){
+        ADJ1=cor(datExpr,use="p")^5 # try unsigned, max(0,val)
+        ADJ1[which(ADJ1<0,arr.ind=T)]<-0
+        prefix=paste(prefix,'signed',sep='_')
+    }else{
+        ADJ1=abs(cor(datExpr,use="p"))^6 # try unsigned, max(0,val)
+        prefix=paste(prefix,'unsigned',sep='_')
+    }
+
 
     #sizeGrWindow(10,5)
-    par(mfrow=c(1,2))
-    hist(k)
-    scaleFreePlot(k, main="Check scale free topology\n")
-
-    fullDatExpr=datExpr
-    datExpr=datExpr[, rank(-k,ties.method="first" )<=3600]
     dissADJ=1-ADJ1
-
-
     hierADJ=hclust(as.dist(dissADJ), method="average" )
 
     ###CUTTING TREEE
@@ -51,18 +70,8 @@ clusterData <- function(datExpr,prefix=''){
     # This function transforms the branch numbers into colors
     colorDynamicADJ=labels2colors(branch.number )
 
-   #sizeGrWindow(10,5);
-  #  plotDendroAndColors(hierADJ, colors=colorDynamicADJ, dendroLabels = FALSE, hang = 0.03,
-   #                     main = "Gene hierarchical clustering dendrogram and assigned colors" )
-
     ##now restrict by module size
     colorStaticADJ=as.character(cutreeStaticColor(hierADJ, cutHeight=.99, minSize=20))
-    # Plot the dendrogram with module colors
-   # sizeGrWindow(10,5);
-  #  plotDendroAndColors(hierADJ, colors = data.frame(colorStaticADJ),
-  #                      dendroLabels = FALSE, abHeight = 0.99,
-  #                      main = "Gene dendrogram and module colors")
-
 
     ##now do the hybrid approach
     colorDynamicHybridADJ=labels2colors(cutreeDynamic(hierADJ,distM= dissADJ,
@@ -93,9 +102,9 @@ clusterData <- function(datExpr,prefix=''){
 
     dev.off()
     ##which clustering should i return?
-    ret=list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM)
+    ret=list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM,TOMprefix=paste("TOM",prefix,sep=''),ADJprefix=prefix)
     tab<-as.data.frame(ret)
-    tab$Gene=colnames(fullDatExpr)
+    tab$Gene=colnames(datExpr)
     write.table(tab,file=paste('WGCNA_',prefix,'ClusterAssignment.tsv',sep=''),sep='\t',row.names=F)
 
     return(ret)
