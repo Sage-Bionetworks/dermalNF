@@ -10,16 +10,77 @@ library(data.table)
 if(!exists('cancer.gene.muts'))
   cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
 
-#'Define function to plot gene mutations across patients
+
+doPatientHeatmap<-function(mut.tab,title,fname){
+  
+  ##format into matrix
+  mut.counts=mut.tab%>% 
+    group_by(Hugo_Symbol,Sample_ID) %>% 
+    summarize(Count=n()) %>%
+    acast(Hugo_Symbol~Sample_ID,value.var='Count')
+  
+  #get extra variables, like distinct variants
+  num.variants=mut.tab%>%group_by(Hugo_Symbol)%>%summarize(Variants=n_distinct(Protein_Change))
+  variants=num.variants$Variants
+  names(variants)=num.variants$Hugo_Symbol
+  
+  ##now filter by minCount
+  mut.counts=mut.counts[which(apply(mut.counts,1,function(x) length(which(x>0)))>minPatients),]
+  
+  
+  
+  #get row and column order
+  r.o=order(apply(mut.counts,1,function(x) length(which(x>0))))
+  c.o=order(apply(mut.counts,2,function(x) length(which(x>0))))
+  
+  mut.counts=mut.counts[r.o,c.o]
+  
+  pheatmap(log10(1+mut.counts),cellwidth=10,cellheight=10,cluster_rows=F,cluster_cols=F,
+           main=title,filename=fname,annotation_row=data.frame(Variants=variants))
+             
+}
+
+#'Define function to plot gene mutations across patients in a heatmap
 #'@param mutTable - table of mutations in cBio format
+#'@param minSampls - minimum number of samples required to include a gene
+#'@param notIncluded - what type of mutation to exclude?
 #'
-panPatientPlots<-function(mutTable=cancer.mut.genes,minPatients=2,notIncluded=c()){
+panPatientPlots<-function(mutTable=cancer.gene.muts,minSamples=2,notIncluded=c()){
   ##first remove genes
   if(length(notIncluded)>0){
     print(paste("Removing",length(which(mutTable$Mutation_Type%in%notIncluded)),'mutations that are',paste(notIncluded,collapse='or')))
-    mutTable=mutTable[-which(mutTable%Mutation_Type%in%notIncluded),]  
+    mutTable=mutTable[-which(mutTable$Mutation_Type%in%notIncluded),]  
   }
   
+  #get somatic mutants, then plot
+  som.muts=subset(mutTable,Mutation_Status=='Somatic')
+  #now filter by minSamples value
+  som.sample.count=som.muts%>%group_by(Hugo_Symbol)%>%summarize(Samples=n_distinct(Sample_ID))
+  genes.to.plot=as.character(som.sample.count$Hugo_Symbol[which(som.sample.count$Samples>minSamples)])
+  som.muts=som.muts[which(as.character(som.muts$Hugo_Symbol)%in%genes.to.plot),]
+  
+  title=paste('Number of somatic mutations in\n genes',
+              ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
+              'that occur in at least',minPatients,'samples')
+  fname=paste('somaticMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
+  doPatientHeatmap(som.muts,title,paste(fname,'png',sep='.'))
+  
+  #then get germline
+  g.muts=subset(mutTable,Mutation_Status=='Germline')
+  title=paste('Number of somatic mutations in\n genes',
+              ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
+              'that occur in at least',minSamples,'samples')
+  fname=paste('somaticMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
+ 
+  g.sample.count=g.muts%>%group_by(Hugo_Symbol)%>%summarize(Samples=n_distinct(Sample_ID))
+  genes.to.plot=as.character(g.sample.count$Hugo_Symbol[which(g.sample.count$Samples>minSamples)])
+  g.muts=g.muts[which(as.character(g.muts$Hugo_Symbol)%in%genes.to.plot),]
+  
+  title=paste('Number of germline mutations in\n genes',
+              ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
+              'that occur in at least',minSamples,'samples')
+  fname=paste('germlineMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
+  doPatientHeatmap(g.muts,title,paste(fname,'png',sep='.'))
   
 }
 
