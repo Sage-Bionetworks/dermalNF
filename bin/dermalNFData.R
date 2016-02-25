@@ -262,7 +262,7 @@ rna_bam_annotations<-function(){
 }
 
 ##here are the count files analyzed by featureCounts
-rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
+rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE,doVoomNorm=FALSE){
 
     if(!stored){
         synq=synapseQuery("select name,id,patientID,tissueID from entity where parentId=='syn5493036'")
@@ -323,10 +323,16 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
       gene.pat.mat<-varmat
       minCount=log2(minCount)
 
+    }else if(doVoomNorm){
+      print("Performing VOOM normalization")
+      require(limma)
+      ret = voomWithQualityWeights(gene.pat.mat)$E
     }
 
     sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
-
+    if(doVoomNorm)
+      gene.pat.mat=ret
+    
     return(gene.pat.mat[sel.vals,])
 
 }
