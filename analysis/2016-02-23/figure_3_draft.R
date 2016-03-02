@@ -27,14 +27,14 @@ baf$tissueType=cnv_annotes$tissueType[match(fnames,cnv_annotes$File)]
 rm(cnv_annotes)
 
 ##figure 5 - plot of proteomics values?
-pl=ggplot(lrr,aes(x=Log.R.Ratio,y=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))
-pdf('rotated_violinLrrPlot.pdf',width=800)
+pl=ggplot(lrr,aes(y=Log.R.Ratio,x=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType)) + coord_flip()
+pdf('rotated_violinLrrPlot.pdf',height=800)
 
 print(pl)
 dev.off()
 
-pb=ggplot(baf,aes(x=B.Allele.Freq,y=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))
-pdf('rotated_violinBafPlot.pdf',width=800)
+pb=ggplot(baf,aes(y=B.Allele.Freq,x=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType)) + coord_flip()
+pdf('rotated_violinBafPlot.pdf',height=800)
 print(pb)
 dev.off()
 

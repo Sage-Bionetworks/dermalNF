@@ -125,6 +125,17 @@ getEnrichment<-function(datExpr,colorh1,prefix){
   return(gtab)
 }
 
+#' alternate enrichment analysis
+#' @param datExpr - expression matrix
+#' @param colorh1 - clustering from WGCNA
+#' @param patient_variables table mapping each sample to various features of interest
+#' @param prefix - prefix for file naming
+#' @return Table of features and enrichment p-values
+getAltEnrichment<-function(datExpr,colorh1,patient_variables,prefix){
+  
+  
+}
+
 #'
 #'Given an expression matrix and a color assignment from the clustering
 #'do some analysis
