@@ -12,7 +12,7 @@ options(stringsAsFactors = FALSE)
 library(cluster)
 
 ##collect two matrices, one with feature counts and one from cufflinks
-fc.matrix = rna_count_matrix(stored=TRUE,doNorm=TRUE,minCount=2,doLogNorm=FALSE)
+fc.matrix = rna_count_matrix(stored=TRUE,doVoomNorm=TRUE,minCount=2,doLogNorm=FALSE)
 patients=rna_annotations()[,c('patientId','synapseId')]
 
 fc.pids=sapply(patients$patientId,function(x) gsub('CT0+','',x))
@@ -27,25 +27,24 @@ names(cl.pids)<-cl.patients$sample
 
 #' do WGCNA analysis to get clusters of gene modules
 #'
-clusterData <- function(datExpr,prefix='',do.signed=FALSE,filterBySD=FALSE){
+clusterData <- function(datExpr,prefix='',do.signed=FALSE,filterBySD=FALSE,topGenes=5000){
 
 
-    pdf(paste(prefix,'WGCNAClustering.pdf',sep=''),10,5)
     fullDatExpr=datExpr
 
     #filter by SD/cov
     if(filterBySD){
         k=apply(datExpr,2,sd,na.rm=T)
         prefix=paste(prefix,'filteredBySd',sep='_')
-        datExpr=datExpr[,rank(k,decreasing=TRUE)<=5000]
+        datExpr=datExpr[,rank(k,ties.method='first')<=topGenes]
 
     }else{
         k=softConnectivity(datE=datExpr,power=6)
         par(mfrow=c(1,2))
-        hist(k)
-        scaleFreePlot(k, main="Check scale free topology\n")
+        #hist(k)
+        #scaleFreePlot(k, main="Check scale free topology\n")
         prefix=paste(prefix,'filterByConn',sep='_')
-        datExpr=datExpr[, rank(-k,ties.method="first" )<=5000]
+        datExpr=datExpr[, rank(-k,ties.method="first" )<=topGenes]
 
     }
 
@@ -77,6 +76,8 @@ clusterData <- function(datExpr,prefix='',do.signed=FALSE,filterBySD=FALSE){
     colorDynamicHybridADJ=labels2colors(cutreeDynamic(hierADJ,distM= dissADJ,
                                                       cutHeight = 0.998, deepSplit=2, pamRespectsDendro = FALSE))
    #  sizeGrWindow(10,5)
+    pdf(paste(prefix,'WGCNAClustering.pdf',sep=''),10,5)
+    
     plotDendroAndColors(dendro = hierADJ,
                         colors=data.frame(colorStaticADJ,
                                           colorDynamicADJ, colorDynamicHybridADJ),
@@ -102,11 +103,11 @@ clusterData <- function(datExpr,prefix='',do.signed=FALSE,filterBySD=FALSE){
 
     dev.off()
     ##which clustering should i return?
-    ret=list(origStatic=colorStaticADJ,tomStatic=colorStaticTOM,TOMprefix=paste("TOM",prefix,sep=''),ADJprefix=prefix)
+    ret=list(origStatic=colorDynamicADJ,tomStatic=colorDynamicTOM,TOMprefix=paste("TOM",prefix,sep=''),ADJprefix=prefix)
     tab<-as.data.frame(ret)
     tab$Gene=colnames(datExpr)
     write.table(tab,file=paste('WGCNA_',prefix,'ClusterAssignment.tsv',sep=''),sep='\t',row.names=F)
-
+    ret$expr=datExpr
     return(ret)
 }
 
@@ -124,6 +125,17 @@ getEnrichment<-function(datExpr,colorh1,prefix){
   return(gtab)
 }
 
+#' alternate enrichment analysis
+#' @param datExpr - expression matrix
+#' @param colorh1 - clustering from WGCNA
+#' @param patient_variables table mapping each sample to various features of interest
+#' @param prefix - prefix for file naming
+#' @return Table of features and enrichment p-values
+getAltEnrichment<-function(datExpr,colorh1,patient_variables,prefix){
+  
+  
+}
+
 #'
 #'Given an expression matrix and a color assignment from the clustering
 #'do some analysis
@@ -132,6 +144,7 @@ evalEigenModules<-function(datExpr,colorh1,pids=NA,prefix=''){
   datME=moduleEigengenes(datExpr,colorh1)$eigengenes
   if(is.na(pids))
     pids=rownames(datExpr)
+
 
   dissimME=(1-t(cor(datME, method="p")))/2
   hclustdatME=hclust(as.dist(dissimME), method="average" )
@@ -145,9 +158,14 @@ evalEigenModules<-function(datExpr,colorh1,pids=NA,prefix=''){
  # which.module="green"
   for(which.module in unique(colorh1)){
     ME=datME[, paste("ME",which.module, sep="")]
+    #print(ncol(ME))
+    idx=which(colorh1==which.module)
+    if(length(idx)<10)
+      next
     pdf(paste(prefix,which.module,'moduleInGeneExpression.pdf',sep=''))
     par(mfrow=c(2,1), mar=c(0.3, 5.5, 3, 2))
-    plotMat(t(scale(datExpr[,colorh1==which.module ]) ),
+    
+    plotMat(t(scale(datExpr[,idx ]) ),
             nrgcols=30,rlabels=F,rcols=which.module,clabels=pids,
             main=which.module, cex.main=2)
     par(mar=c(5, 4.2, 0, 0.7))

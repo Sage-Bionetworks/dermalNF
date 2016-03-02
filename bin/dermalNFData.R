@@ -125,15 +125,14 @@ cnv_segmented_by_region<-function(){
   tab<-read.table(fn@filePath,header=T)
   return(tab)
 }
+
 #################
 #PROTEOMICS
 #################
 protein_annotations<-function(){
     annots<-synapseQuery("select name,ID,dataType,tissueID,tissueType,patientID,sampleID from entity where parentId=='syn4984949'")
     annots<-annots[-grep('EMPTY',annots$entity.name),]
-
     colnames(annots)<-c('tissueType','dataType','sampleId','patientId','fileName','tissueId','synapseId')
-
     return(annots)
 }
 
@@ -159,9 +158,86 @@ get.protein.from.file<-function(sn,top_only=FALSE){
   top.nums=nums[u.tops]
   top.conts=denoms[u.tops]
 
-  return(list(Ratios=top.ratios,Raw=top.nums,Control=top.conts,Prot.ids=tab[u.tops,4],Origin=tab[,8]))
+  return(list(Ratios=top.ratios,Raw=top.nums,Control=top.conts,Prot.ids=tab[u.tops,4],Origin=tab[u.tops,8]))
 
 }
+
+prot_unnormalized<-function(){
+  allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
+  
+  
+    res<-sapply(allfiles$entity.id,function(x) get.protein.from.file(x,TRUE))
+   # names(res)<-allfiles$entity.id
+    #first col  lect all proteins annotated in any file
+    all.prots<-NULL
+    for(i in 1:ncol(res))
+      all.prots<-union(all.prots,res[['Prot.ids',i]])
+    #filter for those that are expressed across all samples
+    #   expr.prots<-res[['Prot.ids',1]]
+    #    for(i in 2:ncol(res))
+    #        expr.prots<-intersect(expr.prots,res[['Prot.ids',i]])
+    
+    prot.ids<-unique(unlist(sapply(all.prots,function(x) unlist(strsplit(x,split=';')))))
+    
+    #now create biomart mapping
+    require(biomaRt)
+    ensembl=useMart("ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl",host='www.ensembl.org')
+    filters = listFilters(ensembl)
+    attributes = listAttributes(ensembl)
+    
+    allsamps<-colnames(res)
+    sfiles=sapply(allsamps,function(x) res[['Origin',x]][1])
+    
+    expr.ratio.mat<-sapply(all.prots,function(x){
+      
+      pvec<-sapply(allsamps,function(i){
+        rv<-grep(x,res[['Prot.ids',i]])
+        if(length(rv)==0)
+          return(0)
+        else
+          return(res[['Ratios',i]][rv])
+      })
+      names(pvec)<-allsamps
+      unlist(pvec)
+    })
+    
+    expr.raw.mat<-sapply(all.prots,function(x){
+      # pvec<-NULL
+      # samps<-NULL
+      
+      pvec<-sapply(allsamps,function(i){
+        rv<-grep(x,res[['Prot.ids',i]])
+        if(length(rv)==0)
+          return(0)
+        else
+          return(res[['Raw',i]][rv])
+      })
+      names(pvec)<-allsamps
+      unlist(pvec)
+    })
+    
+    gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
+    expr.ratio.mat[which(is.na(expr.ratio.mat),arr.ind=T)]<-0.0
+    #expr.ratio.mat<-expr.ratio.mat[-grep('EMPTY',rownames(expr.ratio.mat)),]
+    gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
+    gn[which(is.na(gn))]<-colnames(expr.ratio.mat)[which(is.na(gn))]
+    colnames(expr.ratio.mat)<-gn
+    
+    gn<-gene.mapping[match(colnames(expr.raw.mat),gene.mapping[,1]),2]
+    expr.raw.mat[which(is.na(expr.raw.mat),arr.ind=T)]<-0.0
+    #expr.ratio.mat<-expr.ratio.mat[-grep('EMPTY',rownames(expr.ratio.mat)),]
+    gn<-gene.mapping[match(colnames(expr.raw.mat),gene.mapping[,1]),2]
+    gn[which(is.na(gn))]<-colnames(expr.raw.mat)[which(is.na(gn))]
+    colnames(expr.raw.mat)<-gn
+    
+    ##now create a regular comparison of each sample, protein, and control, patient
+    ratios=tidyr::gather(data.frame(Sample=rownames(expr.ratio.mat),expr.ratio.mat),"Protein","Ratio",1+1:ncol(expr.ratio.mat))
+    raws=tidyr::gather(data.frame(Sample=rownames(expr.raw.mat),expr.raw.mat),"Protein","RawValue",1+1:ncol(expr.raw.mat))
+    patients=sapply(allfiles$entity.patientID[match(raws$Sample,allfiles$entity.id)],function(x) gsub("CT0+","",x))
+    experiment=c()
+    
+    
+    }
 
 
 prot_normalized<-function(store=FALSE,all.expr=TRUE){
@@ -264,7 +340,7 @@ rna_bam_annotations<-function(){
 }
 
 ##here are the count files analyzed by featureCounts
-rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
+rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE,doVoomNorm=FALSE){
 
     if(!stored){
         synq=synapseQuery("select name,id,patientID,tissueID from entity where parentId=='syn5493036'")
@@ -325,10 +401,16 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE){
       gene.pat.mat<-varmat
       minCount=log2(minCount)
 
+    }else if(doVoomNorm){
+      print("Performing VOOM normalization")
+      require(limma)
+      ret = voomWithQualityWeights(gene.pat.mat)$E
     }
 
     sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
-
+    if(doVoomNorm)
+      gene.pat.mat=ret
+    
     return(gene.pat.mat[sel.vals,])
 
 }
