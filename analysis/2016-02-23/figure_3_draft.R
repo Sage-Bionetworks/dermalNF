@@ -9,10 +9,10 @@ library(ggplot2)
 
 ##figure 3 focuses on SNP data
 cnv_annotes=cnv_annotations()
-
+library(parallel)
 all.cnv=cnv_unprocessed()
-lrr<- do.call("rbind", lapply(all.cnv, function(i) as.data.frame(i[,2:3])))
-baf<- do.call("rbind", lapply(all.cnv, function(i) as.data.frame(i[,c(2,4)])))
+lrr<- do.call("rbind", mclapply(all.cnv, function(i) as.data.frame(i[,2:3]),mc.cores=4))
+baf<- do.call("rbind", mclapply(all.cnv, function(i) as.data.frame(i[,c(2,4)]),mc.cores=4))
 
 cnv_annotes$patient=sapply(as.character(cnv_annotes$patientId),function(x) gsub("CT0+","",x))
 ##add in patient identifier
@@ -25,14 +25,14 @@ baf$Patient=cnv_annotes$patient[match(fnames,cnv_annotes$File)]
 baf$tissueType=cnv_annotes$tissueType[match(fnames,cnv_annotes$File)]
 
 ##figure 5 - plot of proteomics values? 
-pl=ggplot(lrr,aes(x=Log.R.Ratio,y=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))
-png('rotated_violinLrrPlot.png',width=800)
+pl=ggplot(lrr,aes(y=Log.R.Ratio,x=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))+coord_flip()
+png('rotated_violinLrrPlot.png',height=800)
 
 print(pl)
 dev.off()
 
-pb=ggplot(baf,aes(x=B.Allele.Freq,y=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))
-png('rotated_violinBafPlot.png',width=800)
+pb=ggplot(baf,aes(y=B.Allele.Freq,x=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))+coord_flip()
+png('rotated_violinBafPlot.png',height=800)
 print(pb)
 dev.off()
 

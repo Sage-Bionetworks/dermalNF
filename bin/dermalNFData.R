@@ -58,6 +58,8 @@ cnv_unprocessed_files<-function(){
 
   snp.tissue<-snpfiles$entity.tissueID
   names(snp.tissue)<-snp.sample.names
+  if(require(parallel))
+    lapply<-function(x,...) mclapply(x,...,mc.cores=4)
 
     sample.data<-lapply(snpfiles$entity.id,function(synid){
     print(paste("Getting sample",snpfiles$entity.name[match(synid,snpfiles$entity.id)]))
