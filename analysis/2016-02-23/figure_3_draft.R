@@ -9,10 +9,10 @@ library(ggplot2)
 
 ##figure 3 focuses on SNP data
 cnv_annotes=cnv_annotations()
-
+library(parallel)
 all.cnv=cnv_unprocessed()
-lrr<- do.call("rbind", lapply(all.cnv, function(i) as.data.frame(i[,2:3])))
-baf<- do.call("rbind", lapply(all.cnv, function(i) as.data.frame(i[,c(2,4)])))
+lrr<- do.call("rbind", mclapply(all.cnv, function(i) as.data.frame(i[,2:3]),mc.cores=4))
+baf<- do.call("rbind", mclapply(all.cnv, function(i) as.data.frame(i[,c(2,4)]),mc.cores=4))
 
 cnv_annotes$patient=sapply(as.character(cnv_annotes$patientId),function(x) gsub("CT0+","",x))
 ##add in patient identifier
@@ -33,7 +33,7 @@ pdf('rotated_violinLrrPlot.pdf',height=800)
 print(pl)
 dev.off()
 
-pb=ggplot(baf,aes(y=B.Allele.Freq,x=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType)) + coord_flip()
+pb=ggplot(baf,aes(y=B.Allele.Freq,x=Sample.ID))+geom_violin(aes(fill=Patient,colour=tissueType))+coord_flip()
 pdf('rotated_violinBafPlot.pdf',height=800)
 print(pb)
 dev.off()
