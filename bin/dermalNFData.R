@@ -161,7 +161,7 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 }
 
 prot_unnormalized<-function(){
-  allfiles= synapseQuery('SELECT name,ID,patientID,tissueID FROM entity WHERE parentId=="syn4984949"')
+  allfiles= synapseQuery('SELECT name,ID,patientID,tissueID,originalBatch FROM entity WHERE parentId=="syn4984949"')
   
   
     res<-sapply(allfiles$entity.id,function(x) get.protein.from.file(x,TRUE))
@@ -232,8 +232,16 @@ prot_unnormalized<-function(){
     ratios=tidyr::gather(data.frame(Sample=rownames(expr.ratio.mat),expr.ratio.mat),"Protein","Ratio",1+1:ncol(expr.ratio.mat))
     raws=tidyr::gather(data.frame(Sample=rownames(expr.raw.mat),expr.raw.mat),"Protein","RawValue",1+1:ncol(expr.raw.mat))
     patients=sapply(allfiles$entity.patientID[match(raws$Sample,allfiles$entity.id)],function(x) gsub("CT0+","",x))
-    experiment=c()
+    tids=paste("Patient",patients,'Tissue',allfiles$entity.tissueID[match(raws$Sample,allfiles$entity.id)],sep='_')
     
+        experiments=sapply(allfiles$entity.originalBatch[match(raws$Sample,allfiles$entity.id)],function(x) unlist(strsplit(x,split='_'))[2])
+    
+    full.df=data.frame(ratios,RawValue=raws$RawValue,Tissue=tids,Patient=patients,Experiment=experiments)
+    mindf=subset(full.df,Tissue!='Patient_NULL_Tissue_NULL')
+    ggplot(mindf)+geom_boxplot(aes(x=Experiment,y=Ratio,fill=Tissue))+scale_y_log10()
+    
+  
+    return(mindf)    
     
     }
 
