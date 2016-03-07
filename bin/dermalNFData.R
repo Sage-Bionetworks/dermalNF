@@ -185,6 +185,10 @@ prot_unnormalized<-function(){
     filters = listFilters(ensembl)
     attributes = listAttributes(ensembl)
     
+    epep="ensembl_peptide_id"
+    egene='hgnc_symbol'
+    gene.mapping<-getBM(attributes=c(epep,egene),filters=c(epep),values=as.list(prot.ids),mart=ensembl)
+    
     allsamps<-colnames(res)
     sfiles=sapply(allsamps,function(x) res[['Origin',x]][1])
     
