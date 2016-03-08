@@ -16,7 +16,7 @@ impact=c("LOW",'MODERATE','HIGH')
   print(paste('Selecting from',nrow(allsoms),'mutation files'))
   allsoms=allsoms[which(!gsub('CT0+','',allsoms$entity.patientId)%in%c("10","13")),]
   print(paste('Removing patient 10 and 13 to get',nrow(allsoms),'mutation files'))
-  
+
   allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
   print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
   som.germ=getAllMutData(allsoms)
@@ -42,5 +42,5 @@ write.table(udf,file='allGeneMutationsInDermals.tsv',sep='\t',row.names=F,quote=
 write.table(subset(udf,Mutation_Status=="Germline"),file='germlineAllGeneMutationsInDermals.tsv',sep='\t',row.names=F,quote=F)
 write.table(subset(udf,Mutation_Status=="Somatic"),file='somaticAllGeneMutationsInDermals.tsv',sep='\t',row.names=F,quote=F)
 
-for(f in c("allGeneMutationsInDermals.tsv","germlineGeneMutationsInDermals.tsv","somaticGeneMutationsInDermals.tsv"))
-    synStore(File(f,parentId='syn5605256'),executed=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-07/mutsInAllGenes.R')))
+for(f in c("allGeneMutationsInDermals.tsv","germlineAllGeneMutationsInDermals.tsv","somaticAllGeneMutationsInDermals.tsv"))
+    synStore(File(f,parentId='syn5605256'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-07/mutsInAllGenes.R',wasExecuted=TRUE)))
