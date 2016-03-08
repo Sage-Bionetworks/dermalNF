@@ -1,7 +1,6 @@
 ##perform enrichment of WGCNA categories
 source("../../bin/dermalNFData.R")
-library(synapseClient)
-synapseLogin()
+
 require(dplyr)
 require(ggplot2)
 #signed cluster

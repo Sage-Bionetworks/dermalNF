@@ -18,13 +18,13 @@ cnv_annotes$patient=sapply(as.character(cnv_annotes$patientId),function(x) gsub(
 ##add in patient identifier
 lfnames=sapply(lrr$Sample.ID,paste,'Final.csv',sep='_')
 lrr$Patient=cnv_annotes$patient[match(lfnames,cnv_annotes$File)]
-lrr$Samples=paste('Patient',lrr$Patient,'Tissue',cnv_annotes$tissueID[match(lfnames,cnv_annotes$File)],sep='_')
+lrr$Samples=paste('Patient',lrr$Patient,'Tissue',cnv_annotes$tissueId[match(lfnames,cnv_annotes$File)],sep='_')
 lrr$tissueType=cnv_annotes$tissueType[match(lfnames,cnv_annotes$File)]
 
 fnames=sapply(baf$Sample.ID,paste,'Final.csv',sep='_')
 baf$Patient=cnv_annotes$patient[match(fnames,cnv_annotes$File)]
 baf$tissueType=cnv_annotes$tissueType[match(fnames,cnv_annotes$File)]
-baf$Samples=paste('Patient',baf$Patient,'Tissue',cnv_annotes$tissueID[match(lfnames,cnv_annotes$File)],sep='_')
+baf$Samples=paste('Patient',baf$Patient,'Tissue',cnv_annotes$tissueId[match(lfnames,cnv_annotes$File)],sep='_')
 
 
 ##figure 5 - plot of proteomics values?

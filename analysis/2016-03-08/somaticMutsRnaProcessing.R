@@ -4,7 +4,7 @@ source("../../bin/dermalNFData.R")
 require(dplyr)
 require(ggplot2)
 
-#first do somatic load 
+#first do somatic load
 all.mutations<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
 cancer.gene.muts=read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
 non.silent=subset(all.mutations,Mutation_Type!='Silent')
@@ -22,5 +22,21 @@ png('somaticMutationLoadAcrossSamples.png')
 print(p)
 dev.off()
 
-synStore(File('somaticMutationLoadAcrossSamples.png',parentId='syn5605256'),used=list(list(url=''),wasExecuted=TRUE))
+synStore(File('somaticMutationLoadAcrossSamples.png',parentId='syn5605256'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-08/somaticMutsRnaProcessing.R',wasExecuted=TRUE)))
 
+##clean out some other files from this directory
+ga.files<-synapseQuery("select * from entity where parentId=='syn5605256'")
+
+tsvs=ga.files$entity.id[grep('mutations.tsv',ga.files$entity.name)]
+pdfs=ga.files$entity.id[grep('PerPatient',ga.files$entity.name)]
+#for(sid in c(tsvs,pdfs))
+#  synDelete(sid)
+
+##now do teh RNA processing
+logNorm<-rna_count_matrix(doLogNorm=TRUE)
+voomNorm<-rna_count_matrix(doVoomNorm=TRUE)
+write.table(logNorm,'featureCountsByGeneLogNormalized.txt')
+write.table(voomNorm,'featureCountsByGeneVOOMnormalized.txt')
+
+synStore(File('featureCountsByGeneLogNormalized.txt',parentId='syn4984701'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-08/somaticMutsRnaProcessing.R',wasExecuted=TRUE)))
+synStore(File('featureCountsByGeneVOOMormalized.txt',parentId='syn4984701'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-08/somaticMutsRnaProcessing.R',wasExecuted=TRUE)))
