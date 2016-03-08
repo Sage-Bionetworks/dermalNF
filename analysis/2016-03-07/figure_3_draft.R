@@ -18,26 +18,36 @@ cnv_annotes$patient=sapply(as.character(cnv_annotes$patientId),function(x) gsub(
 ##add in patient identifier
 lfnames=sapply(lrr$Sample.ID,paste,'Final.csv',sep='_')
 lrr$Patient=cnv_annotes$patient[match(lfnames,cnv_annotes$File)]
+lrr$Samples=paste('Patient',lrr$Patient,'Tissue',cnv_annotes$tissueID[match(lfnames,cnv_annotes$File)],sep='_')
 lrr$tissueType=cnv_annotes$tissueType[match(lfnames,cnv_annotes$File)]
 
 fnames=sapply(baf$Sample.ID,paste,'Final.csv',sep='_')
 baf$Patient=cnv_annotes$patient[match(fnames,cnv_annotes$File)]
 baf$tissueType=cnv_annotes$tissueType[match(fnames,cnv_annotes$File)]
+baf$Samples=paste('Patient',baf$Patient,'Tissue',cnv_annotes$tissueID[match(lfnames,cnv_annotes$File)],sep='_')
 
-rm(cnv_annotes)
 
 ##figure 5 - plot of proteomics values?
-pl=ggplot(lrr,aes(y=Log.R.Ratio,x=reorder(Sample.ID,Patient)))+geom_violin(aes(fill=Patient,colour=tissueType)) + coord_flip()
-pb=ggplot(lrr,aes(y=Log.R.Ratio,x=reorder(Sample.ID,Patient)))+geom_boxplot(aes(fill=Patient,colour=tissueType)) + coord_flip()
+pl=ggplot(lrr,aes(y=Log.R.Ratio,x=tissueType))+geom_violin(aes(fill=Patient,colour=tissueType)) + coord_flip()
+pb=ggplot(lrr,aes(y=Log.R.Ratio,x=tissueType))+geom_boxplot(aes(fill=Patient,colour=tissueType)) + coord_flip()
 
-pdf('rotated_LrrPlot.pdf',height=800)
+pl2=ggplot(lrr,aes(y=Log.R.Ratio,x=Samples))+geom_violin(aes(fill=Patient,colour=tissueType)) + coord_flip()
+pb2=ggplot(lrr,aes(y=Log.R.Ratio,x=Samples))+geom_boxplot(aes(fill=Patient,colour=tissueType)) + coord_flip()
+
+pdf('rotated_LrrPlot.pdf')#,height=800)
 
 print(pl)
+print(pb)
+print(pl2)
+print(pb2)
 dev.off()
 
-pb=ggplot(baf,aes(y=B.Allele.Freq,x=reorder(Sample.ID,Patient)))+geom_violin(aes(fill=Patient,colour=tissueType))+coord_flip()
-pdf('rotated_violinBafPlot.pdf',height=800)
+pb=ggplot(baf,aes(y=B.Allele.Freq,x=tissueType))+geom_violin(aes(fill=Patient,colour=tissueType))+coord_flip()
+pb2=ggplot(baf,aes(y=B.Allele.Freq,x=Samples))+geom_violin(aes(fill=Patient,colour=tissueType))+coord_flip()
+
+pdf('rotated_violinBafPlot.pdf')#,height=800)
 print(pb)
+print(pb2)
 dev.off()
 
 snpqc='syn5669811'

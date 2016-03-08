@@ -344,6 +344,12 @@ rna_annotations<-function(){
     return(synq)
 }
 
+rna_cufflinks_annotations<-function(){
+  synq=synapseQuery("select sampleID,patientID,tissueID,tissueType,alternateTumorID from entity where parentId=='syn5492805'")
+  colnames(synq)<-c('tissueType','patientID','sampleID','altTumorID','tissueID','synapseID')
+  return(synq)
+}
+
 rna_bam_annotations<-function(){
     synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn4984620'")
     colnames(synq)<-c('patientID','alternateTumorId','fileName','tissueId','synapseId')

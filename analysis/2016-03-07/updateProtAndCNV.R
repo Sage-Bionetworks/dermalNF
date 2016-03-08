@@ -2,13 +2,13 @@
 
 source("../../bin/dermalNFData.R")
 library(WGCNA)#for clustering
+require(ggplot2)
 
 
 #annotes=proteomics_annotations()
 
 #
 full.df=prot_unnormalized()
-require(ggplot2)
 
 #we can try clustering
 #require(reshape2)
