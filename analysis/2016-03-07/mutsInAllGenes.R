@@ -21,9 +21,9 @@ impact=c("LOW",'MODERATE','HIGH')
   print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
   som.germ=getAllMutData(allsoms)
 
-allstats<-mclapply(as.character(all.genes[,1]),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ)),mc.cores=24)
+allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ)),mc.cores=24)
 
-names(allstats)<-as.character(all.genes[,1])
+names(allstats)<-as.character(all.genes)
 
 fulldf<-data.frame(Hugo_Symbol=unlist(sapply(allstats,function(x) as.character(x$Hugo_Symbol))),
                    Protein_Change=unlist(sapply(allstats,function(x) as.character(x$Protein_Change))),
