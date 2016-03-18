@@ -8,17 +8,17 @@ exlist=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalN
 #  for(sd in c(FALSE,TRUE)){
 signed=TRUE
 sd=FALSE
-   fc.clust=clusterData(t(fc.matrix),'featureCounts',signed,sd,topGenes=3000)
+#   fc.clust=clusterData(t(fc.matrix),'featureCounts',signed,sd,topGenes=3000)
   #  fc.enrich=getEnrichment(fc.clust$expr,fc.clust$tomStatic,fc.clust$TOMprefix)
-    fc.eigen=evalEigenModules(fc.clust$expr,colorh1=fc.clust$tomStatic,pids=fc.pids,prefix=fc.clust$TOMprefix)
-    write.table(fc.eigen,paste('featureCounts',ifelse(sd,'sd','conn'),'filtered',ifelse(signed,'signed','unsigned'),'clusterEigenGenes.tab',sep='_'))
+#    fc.eigen=evalEigenModules(fc.clust$expr,colorh1=fc.clust$tomStatic,pids=fc.pids,prefix=fc.clust$TOMprefix)
+#    write.table(fc.eigen,paste('featureCounts',ifelse(sd,'sd','conn'),'filtered',ifelse(signed,'signed','unsigned'),'clusterEigenGenes.tab',sep='_'))
 
     ##then get clusters for cufflinks
     cl.clust=clusterData(t(cl.matrix),'cuffLinks',signed,sd,topGenes=3000)
     ##now plot eigen genes for each
     #cl.enrich=getEnrichment(cl.clust$expr,cl.clust$tomStatic,cl.clust$TOMprefix)
     cl.eigen=evalEigenModules(cl.clust$expr,colorh1=cl.clust$tomStatic,pids=cl.pids[rownames(cl.clust$expr)],prefix=cl.clust$TOMprefix)
-    write.table(cl.eigen,paste('cuffLinks',ifelse(sd,'sd','conn'),'filtered',ifelse(signed,'signed','unsigned'),'clusterEigenGenes.tab',sep='_'))  }
+    write.table(cl.eigen,paste('cuffLinks',ifelse(sd,'sd','conn'),'filtered',ifelse(signed,'signed','unsigned'),'clusterEigenGenes.tab',sep='_'))  
 #}
 
 

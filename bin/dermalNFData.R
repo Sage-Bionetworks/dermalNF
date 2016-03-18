@@ -421,7 +421,7 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE,d
 
     }else if(doVoomNorm){
       print("Performing VOOM normalization")
-      require(limma)
+      library(limma)
       ret = voomWithQualityWeights(gene.pat.mat)$E
     }
 
