@@ -39,4 +39,4 @@ write.table(logNorm,'featureCountsByGeneLogNormalized.txt')
 write.table(voomNorm,'featureCountsByGeneVOOMnormalized.txt')
 
 synStore(File('featureCountsByGeneLogNormalized.txt',parentId='syn4984701'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-08/somaticMutsRnaProcessing.R',wasExecuted=TRUE)))
-synStore(File('featureCountsByGeneVOOMormalized.txt',parentId='syn4984701'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-08/somaticMutsRnaProcessing.R',wasExecuted=TRUE)))
+synStore(File('featureCountsByGeneVOOMnormalized.txt',parentId='syn4984701'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-08/somaticMutsRnaProcessing.R',wasExecuted=TRUE)))
