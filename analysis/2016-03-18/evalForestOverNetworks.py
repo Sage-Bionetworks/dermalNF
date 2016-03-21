@@ -49,6 +49,6 @@ for a in allfiles.keys():
                 for w in w_range:
                     conf_prep(mu,beta,D,w)
                     out_label = "%s_w%f_beta%d_D%d_mu%f" %(prefix,w,beta,D,mu)
-                    cmd="python %s --prize %s --edge %s --conf conf.txt --msgpath ~/msgsteiner-1.1/msggsteiner --outpath %s --outlabel %s" %(os.path.join(omics_int_dir,'scripts/forest.py'),prize_file,edge_file,output_path,out_label)
+                    cmd="python %s --prize %s --edge %s --conf conf.txt --msgpath ~/msgsteiner-1.1/msgsteiner --outpath %s --outlabel %s" %(os.path.join(omics_int_dir,'scripts/forest.py'),prize_file,edge_file,output_path,out_label)
                     print cmd
                     os.system(cmd)
