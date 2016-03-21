@@ -92,6 +92,9 @@ for a in allfiles.keys():
                     out_label = "%s_w%f_beta%d_D%d_mu%f" %(prefix,w,beta,D,mu)
                     opt_file=os.path.join(input_path,out_label+'_optimalForest.sif')
                     dum_file=os.path.join(input_path,out_label+'_dummyForest.sif')
-                    net_stats=netStats(opt_file,dum_file)
-                    ofile.write("%s\t%s\t%f\t%d\t%f\t%d\t%d\t%d\t%s\t%s\n"%(a,prefix,mu,beta,w,net_stats['numEdges'],net_stats['numTrees'],net_stats['numNodes'],net_stats['treeSizes'],net_stats['hasUBC'])
+                    if os.path.exists(opt_file) and os.path.exists(dum_file):
+                        net_stats=netStats(opt_file,dum_file)
+                        ofile.write("%s\t%s\t%f\t%d\t%f\t%d\t%d\t%d\t%s\t%s\n"%(a,prefix,mu,beta,w,\
+                        net_stats['numEdges'],net_stats['numTrees'],net_stats['numNodes'],\
+                        net_stats['treeSizes'],net_stats['hasUBC'])
 of.close()
