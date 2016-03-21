@@ -5,7 +5,7 @@ Goal is to download data from synapse and
 format for input into hotnet2
 '''
 import os,sys,re
-hotnetdir='../../../../src/hotnet2-1.0.1/'
+hotnetdir='~/hotnet2/'
 
 os.system('Rscript ./formatHotnetData.R')
 
