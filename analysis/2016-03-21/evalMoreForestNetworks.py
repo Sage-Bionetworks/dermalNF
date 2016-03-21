@@ -18,7 +18,7 @@ frac_ids=[a['entity.id'] for a in allfiles if 'fracOfProteins' in a['entity.name
 mean_ids=[a['entity.id'] for a in allfiles if 'meanOfProteins' in a['entity.name']]
 sum_ids=[a['entity.id'] for a in allfiles if 'sumOfProteins' in a['entity.name']]
 
-allfiles={'proteinFraction':frac_ids,'proteinMean':mean_ids}#,'proteinTotal':sum_ids}
+allfiles={'proteinFraction':frac_ids,'proteinMean':mean_ids,'proteinTotal':sum_ids}
 
 def conf_prep(mu,beta,D,w):
     file = open("conf.txt","w")
@@ -38,31 +38,35 @@ Get network statistics for a particular .sif file to try to determine best
 one to use!
 '''
 def netStats(opt_fname,dummy_fname):
-    opt.tab=[a.split('\tpp\t') for a in open(opt_fname,'r').readLines()]
-    dummy.tab=[a.split('\tpp\t') for a in open(dummy_fname,'r').readLines()]
+    print 'Evaluating statistics from %s,%s'%(opt_fname,dummy_fname)
+
+    opt_tab=[a.strip().split('\tpp\t') for a in open(opt_fname,'r').readlines()]
+    dummy_tab=[[a.strip().split('\t')[0],a.strip().split('\t')[2]] for a in open(dummy_fname,'r').readlines()]
+
 
     stats={}
     ##get optimal number of edges
-    opt.g=networkx.from_edgelist(opt.tab)
-    dum.g=networkx.from_edgelist(dumm.tab)
+    opt_g=networkx.from_edgelist([(a[0],a[1]) for a in opt_tab])
+    dum_g=networkx.from_edgelist([(a[0],a[1]) for a in dummy_tab])
 
-    stats['numEdges'] = len(opt.tab)
+    stats['numEdges'] = len(opt_tab)
     ##get number of trees (dummy - opt)
-    stats['numTrees'] = len(dummy.tab) - len(opt.tab)
+    stats['numTrees'] = networkx.number_connected_components(opt_g) #len(dummy_tab) - len(opt_tab)
 
-    conn_comps=networkx.connected_components(opt.g)
-    print stats['numTrees'],conn_comps
+    conn_comps=networkx.connected_components(opt_g)
 
     ##number of nodes
-    nodes=set()
-    [nodes.add([a[0],a[1]]) for a in opt.tab]
+    nodes=opt_g.nodes()
     stats['numNodes']=len(nodes)
 
     ##get tree sizes
-    stats['treeSize']=','.join([len(c) for c in sorted(conn_comps, key=len, reverse=True)])
+    stats['treeSizes']=','.join([str(len(c)) for c in sorted(conn_comps, key=len, reverse=True)])
 
     ##find ubiquitin?
-    stats['hasUBC']='UBC'%in%nodes
+    if 'UBC' in nodes:
+    	stats['hasUBC']='True'
+    else:
+	stats['hasUBC']='False'
 
     return stats
 
@@ -94,7 +98,10 @@ for a in allfiles.keys():
                     dum_file=os.path.join(input_path,out_label+'_dummyForest.sif')
                     if os.path.exists(opt_file) and os.path.exists(dum_file):
                         net_stats=netStats(opt_file,dum_file)
-                        ofile.write("%s\t%s\t%f\t%d\t%f\t%d\t%d\t%d\t%s\t%s\n"%(a,prefix,mu,beta,w,\
-                        net_stats['numEdges'],net_stats['numTrees'],net_stats['numNodes'],\
-                        net_stats['treeSizes'],net_stats['hasUBC'])
-of.close()
+                        ofile.write("%s\t%s\t%f\t%d\t%f\t%d\t%d\t%d\t%s\t%s\n"%(a,prefix,mu,beta,w,net_stats['numEdges'],\
+                                                                            net_stats['numTrees'],net_stats['numNodes'],\
+                                                                            net_stats['treeSizes'],net_stats['hasUBC']))
+
+ofile.close()
+
+syn.store(synapseclient.File('forestStats.txt',parentId='syn5804586'),activityName='evaluatedForestAndParams',used = {'url':'https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-21/evalMoreForestNetworks.py'})
