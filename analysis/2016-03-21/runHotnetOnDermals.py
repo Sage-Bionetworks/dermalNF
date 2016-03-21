@@ -7,7 +7,7 @@ format for input into hotnet2
 import os,sys,re
 hotnetdir='../../../../src/hotnet2-1.0.1/'
 
-#os.system('Rscript ./formatHotnetData.R')
+os.system('Rscript ./formatHotnetData.R')
 
 afiles=[a for a in os.listdir('./') if 'tab' in a]
 heatfiles=[]
@@ -15,7 +15,7 @@ for a in afiles:
   altfile=re.sub('.tab','.heat',a)
   print altfile
   heatfiles.append(altfile)
-#  os.system('python '+os.path.join(hotnetdir,'generateHeat.py')+' scores -o '+altfile+' -hf '+a)
+  os.system('python '+os.path.join(hotnetdir,'generateHeat.py')+' scores -o '+altfile+' -hf '+a)
  # os.system('python '+os.path.join(hotnetdir,'generateHeat.py')+' mutation '+a)
 
 
