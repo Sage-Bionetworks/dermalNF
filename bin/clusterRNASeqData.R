@@ -116,12 +116,12 @@ clusterData <- function(datExpr,prefix='',do.signed=FALSE,filterBySD=FALSE,topGe
 #' @param datExpr a sample by gene matrix of expression
 #' @param module assignments (generally by color)
 #' @return Table of most enrichmed terms for each module
-getEnrichment<-function(datExpr,colorh1,prefix){
+getEnrichment<-function(datExpr,colorh1,prefix,ntop=10){
   tab<-read.table('../../data/HugoGIDsToEntrez_DAVID.txt',header=T,sep='\t',quote='"')
   eids=tab$To[match(colnames(datExpr),tab$From)]
-  res=GOenrichmentAnalysis(colorh1[!is.na(eids)],eids[!is.na(eids)],organism='human',nBestP=10)
+  res=GOenrichmentAnalysis(colorh1[!is.na(eids)],eids[!is.na(eids)],organism='human',nBestP=ntop)
   gtab = res$bestPTerms[[4]]$enrichment
-  write.table(gtab,file=paste(prefix,'top10GOTermsPermodule.csv',sep=''),sep=',')
+  write.table(gtab,file=paste(prefix,'top',ntop,'GOTermsPermodule.csv',sep=''),sep=',')
   return(gtab)
 }
 
