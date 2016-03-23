@@ -63,12 +63,11 @@ for a in allfiles.keys():
                     out_label = "%s_w%f_beta%d_D%d_mu%f" %(prefix,w,beta,D,mu)
                     conf_prep(mu,beta,D,w)
                     out_label = "%s_w%f_beta%d_D%d_mu%f" %(prefix,w,beta,D,mu)
-                    ne_cmd="python %s --prize %s --edge %s --conf conf.txt  --noisyEdges 100 --msgpath ~/msgsteiner-1.1/msgsteiner --outpath %s --outlabel %s" %(os.path.join(omics_int_dir,'scripts/forest.py'),prize_file,edge_file,output_path,out_label)
+                    ne_cmd="python %s --prize %s --edge %s --conf conf.txt --noisyEdges 100 --msgpath ~/msgsteiner-1.1/msgsteiner --outpath %s --outlabel %s"%(os.path.join(omics_int_dir,'scripts/forest.py'),prize_file,edge_file,output_path,out_label)
                     print ne_cmd
                     os.system(ne_cmd)
 
-                    sp_cmd="python %s --prize %s --edge %s --conf conf.txt
-                    --shuffledPrizes 100 --msgpath ~/msgsteiner-1.1/msgsteiner --outpath %s --outlabel %s"%(os.path.join(omics_int_dir,'scripts/forest.py'),prize_file,edge_file,output_path,out_label)
+                    sp_cmd="python %s --prize %s --edge %s --conf conf.txt --shuffledPrizes 100 --msgpath ~/msgsteiner-1.1/msgsteiner --outpath %s --outlabel %s"%(os.path.join(omics_int_dir,'scripts/forest.py'),prize_file,edge_file,output_path,out_label)
                     print sp_cmd
                     os.system(sp_cmd)
                     #opt_file=os.path.join(input_path,out_label+'_optimalForest.sif')
