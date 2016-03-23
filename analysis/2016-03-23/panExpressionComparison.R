@@ -22,5 +22,8 @@ full.cor<-cor(full.mat,use='pairwise.complete.obs',method='spearman')
 
 
 write.table(full.cor,file='panTcgaDermalSpearmanCors.txt',sep='\t',row.names=T,col.names=T,quote=F)
-synStore(File('panTcgaDermalSpearmanCors.txt',parentId='syn5821631'),used=list(list(entity='syn4311114'),list(entity='syn3281840')))
+synStore(File('panTcgaDermalSpearmanCors.txt',parentId='syn5821631'),
+         used=list(list(entity='syn4311114'),list(entity='syn3281840'),
+                   list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-23/panExpressionComparison.R',wasExecuted=TRUE)))
+
 ##now compute the same for fpkm
