@@ -342,7 +342,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
 }
 
 #'Create a heatmap with PHRED scores (need to add in separately)
-heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10){
+heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10,samp.vars=NA){
   require(reshape2)
   require(dplyr)
   require(pheatmap)
@@ -374,22 +374,22 @@ heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10){
   soms=grep('tissue',rownames(pmat))
   #print(head(pmat))
   
-  pheatmap(pmat[soms,],annotation_col = ttypes,
+  pheatmap(pmat[soms,],annotation_col = ttypes,annotation_row=samp.vars,
            cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
          #  legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
            filename=paste('positionScoreSomatic',fname,sep=''))
   
-  pheatmap(pmat[-soms,],annotation_col = ttypes,
+  pheatmap(pmat[-soms,],annotation_col = ttypes,annotation_row=samp.vars,
            cluster_rows=F,cluster_cols=F,
            cellheight=10,cellwidth=10,
          filename=paste('positionScoreGermline',fname,sep=''))
   
-  pheatmap(pmat[soms,col.cuts],annotation_col = ttypes,
+  pheatmap(pmat[soms,col.cuts],annotation_col = ttypes,annotation_row=samp.vars,
            cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
            #  legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
            filename=paste('positionScoreOver',cutoff,'Somatic',fname,sep=''))
   
-  pheatmap(pmat[-soms,col.cuts],annotation_col = ttypes,
+  pheatmap(pmat[-soms,col.cuts],annotation_col = ttypes,annotation_row=samp.vars,
            cluster_rows=F,cluster_cols=F,
            cellheight=10,cellwidth=10,
            filename=paste('positionScoreOver',cutoff,'Germline',fname,sep=''))

@@ -3,7 +3,7 @@ source("../../bin/WGSData.R")
 
 synStore(File('v1.3_anno_191025841cf776d395abb257495fc835.tsv',parentId='syn5605256',name='CADDScoresForNF1Region'))
 
-tab<-read.table(,comment.char='',skip=1,header=T)
+tab<-read.table(synGet('syn5820042')@filePath,comment.char='',skip=1,header=T)
 
 rtab<-tab[-c(which(is.na(tab$GeneName)),grep("CTD",tab$GeneName),grep("RP1",tab$GeneName),grep("RN",tab$GeneName),grep('CTC',tab$GeneName),grep('AC',tab$GeneName)),]
 require(ggplot2)
@@ -37,7 +37,8 @@ names(mut.score)<-nf1.muts$Protein_Change
 files<-heatmapWithPhredScore(nf1.muts,'nf1Mutation.png',nf1.deets,10)
 for(f in files){
   sf=File(f,parentId='syn5605256')
-  this.script=''
+  this.script='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-22/processCaddScores.R'
+  synStore(sf,used=list(list(entity='syn5820042'),list(url=this.script,wasExecuted=TRUE)))
   
 }
 
