@@ -34,6 +34,8 @@ edge_file = os.path.join(omics_int_dir,"data/iref_mitab_miscore_2013_08_12_inter
 conf_file = "conf.txt"
 D = 5
 
+outfolder='syn5816783'
+this_script='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-22/runForestWithRand.py'
 
 ##lots of for loops to query everything involved, and then read in file to
 ##collect stats:
@@ -75,3 +77,7 @@ for a in allfiles.keys():
                     #    ofile.write("%s\t%s\t%f\t%d\t%f\t%d\t%d\t%d\t%s\t%s\n"%(a,prefix,mu,beta,w,net_stats['numEdges'],\
                      #                                                       net_stats['numTrees'],net_stats['numNodes'],\
                      #                                                       net_stats['treeSizes'],net_stats['hasUBC']))
+                    outfiles=[]
+                    for of in outfiles:
+                        syn.store(synapseclient.File(of,parentId=outfoler),\
+                                activityName='ran with randomization',used = [pf,{'url':this_script,'wasExecuted':True}])

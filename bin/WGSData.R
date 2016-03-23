@@ -9,7 +9,8 @@ library(data.table)
 ##read in all cancer gene mutations
 if(!exists('cancer.gene.muts'))
   cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
-
+if(!exists('all.gene.muts'))
+  all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
 
 doPatientHeatmap<-function(mut.tab,title,fname){
   
@@ -45,7 +46,7 @@ doPatientHeatmap<-function(mut.tab,title,fname){
 #'@param minSampls - minimum number of samples required to include a gene
 #'@param notIncluded - what type of mutation to exclude?
 #'
-panPatientPlots<-function(mutTable=cancer.gene.muts,minSamples=2,notIncluded=c()){
+panPatientPlots<-function(mutTable=all.gene.muts,minSamples=2,notIncluded=c()){
   ##first remove genes
   if(length(notIncluded)>0){
     print(paste("Removing",length(which(mutTable$Mutation_Type%in%notIncluded)),'mutations that are',paste(notIncluded,collapse='or')))
@@ -198,9 +199,9 @@ getAllMutData<-function(allsoms=getMAFs('all')){
 getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,som.germ=getAllMutData()){
 
   ##first check to see if we have the file already on synapse
-  if(gene%in%cancer.gene.muts$Hugo_Symbol){
+  if(gene%in%all.gene.muts$Hugo_Symbol){
     print(paste('Found gene',gene,' already processed, will analyze mutations of all impact (impact argument ignored'))
-    df=subset(cancer.gene.muts,Hugo_Symbol==gene)
+    df=subset(all.gene.muts,Hugo_Symbol==gene)
   }else{
     if(is.null(som.germ)){
       allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
@@ -338,6 +339,68 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
   }
   
   return(df)
+}
+
+#'Create a heatmap with PHRED scores (need to add in separately)
+heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10,samp.vars=NA){
+  require(reshape2)
+  require(dplyr)
+  require(pheatmap)
+  
+  ##first map df to phred
+  mut.idx<-match(df$Start_Position,phredscore$Pos)
+  na.vals<-which(is.na(mut.idx))
+  mut.idx[na.vals]<-sapply(na.vals,function(x){
+    match(df[x,'Start_Position']-1,phredscore$Pos)
+  })
+ df$PHRED<-phredscore$PHRED[mut.idx]
+# print(head(df))
+  #df$Consequence<-nf1.deets$Consequence[mut.idx]
+  
+  ##first start with matrix of phred scores
+   ##then separate out by tumor type
+  changes<-as.character(df$Protein_Change)
+  types<-df$Mutation_Type[match(unique(changes),as.character(df$Protein_Change))]
+  ttypes<-data.frame(Consequence=types)
+  rownames(ttypes)<-unique(changes)
+ # print(head(ttypes))
+#  print(head(types))
+  
+  pmat = acast(df,Sample_ID~Protein_Change,value.var='PHRED',fill=0)
+  col.ords=order(apply(pmat,2,function(x) mean(x[which(x>0)])))
+  pmat<-pmat[order(rowSums(pmat)),col.ords]
+  col.cuts=which(apply(pmat,2,function(x) mean(x[which(x>0)])>cutoff))
+  
+  soms=grep('tissue',rownames(pmat))
+  #print(head(pmat))
+  
+  pheatmap(pmat[soms,],annotation_col = ttypes,annotation_row=samp.vars,
+           cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
+         #  legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
+           filename=paste('positionScoreSomatic',fname,sep=''))
+  
+  pheatmap(pmat[-soms,],annotation_col = ttypes,annotation_row=samp.vars,
+           cluster_rows=F,cluster_cols=F,
+           cellheight=10,cellwidth=10,
+         filename=paste('positionScoreGermline',fname,sep=''))
+  
+  pheatmap(pmat[soms,col.cuts],annotation_col = ttypes,annotation_row=samp.vars,
+           cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
+           #  legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
+           filename=paste('positionScoreOver',cutoff,'Somatic',fname,sep=''))
+  
+  pheatmap(pmat[-soms,col.cuts],annotation_col = ttypes,annotation_row=samp.vars,
+           cluster_rows=F,cluster_cols=F,
+           cellheight=10,cellwidth=10,
+           filename=paste('positionScoreOver',cutoff,'Germline',fname,sep=''))
+  
+  fs=paste(c('positionScoreGermline','positionScoreSomatic',
+             paste('positionScoreOver',cutoff,'Somatic',sep=''),
+             paste('positionScoreOver',cutoff,'Germline',sep='')),fname,sep='')
+
+  return(fs)
+  
+  
 }
 
 #'Create a heatmap of tumor depth for a single-gene data frame
