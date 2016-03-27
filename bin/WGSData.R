@@ -163,7 +163,7 @@ storeSomMutationFiles<-function(som.mafs=getMAFs('somatic'),impact='HIGH',patien
 #'by whether or not a particular mutation is somatic or germline
 #'@param allsoms is a table of all mutations of a particular gene, impact or patient
 #'@return list of two tables 'Somatic' is table of somatic mutations while 'Germline' is table of germline
-getAllMutData<-function(allsoms=getMAFs('all')){
+getAllMutData<-function(allsoms=getMAFs('all'),filter=c()){
   ##this function will get the number of 'high impact' somatic mutations as well
   ##as the
    #try to create matrix.
@@ -179,6 +179,11 @@ getAllMutData<-function(allsoms=getMAFs('all')){
   ##now split out somatic or germline
   som.germ<<-lapply(allmuts,function(x){
  #  print(paste('Separating out germline/somatic for sample',x))
+    fout=which(x$FILTER%in%filter)
+    if(length(fout)>0){
+        print(paste('Filtering out',length(fout),'out of',nrow(x),'because they are',paste(filter,collapse=','))
+        x=x[-fout,]
+    }
     is.germ=apply(x,1,function(y){
       (y[['Match_Norm_Seq_Allele1']]!=y[['Reference_Allele']] || y[['Reference_Allele']]!=y[['Match_Norm_Seq_Allele2']] )})
 
@@ -196,10 +201,10 @@ getAllMutData<-function(allsoms=getMAFs('all')){
 #'@param impact is a list of which mutations to include, defaults to all ('HIGH','MODERATE' and 'LOW')
 #'@param doPlot: if set to true, will plot some basic statistics about where and when this mutation occurs
 #'@param som.germ - the MAF file tables separated by whether or not the mutation is somatic or germline
-getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,som.germ=getAllMutData()){
+getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,som.germ=getAllMutData(),filter=c(),redo=FALSE){
 
   ##first check to see if we have the file already on synapse
-  if(gene%in%all.gene.muts$Hugo_Symbol){
+  if(gene%in%all.gene.muts$Hugo_Symbol && !redo){
     print(paste('Found gene',gene,' already processed, will analyze mutations of all impact (impact argument ignored'))
     df=subset(all.gene.muts,Hugo_Symbol==gene)
   }else{
@@ -208,7 +213,7 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
       print(paste('Selecting from',nrow(allsoms),'mutation files'))
       allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
       print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
-      som.germ=getAllMutData(allsoms)
+      som.germ=getAllMutData(allsoms,filter=filter)
     #df<-apply(allsoms,1,function(x){
     }
     classes=c()
