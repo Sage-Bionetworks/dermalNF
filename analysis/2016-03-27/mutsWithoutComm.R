@@ -21,7 +21,7 @@ impact=c("LOW",'MODERATE','HIGH')
   print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
   som.germ=getAllMutData(allsoms)
 
-allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='common_variant')),mc.cores=24)
+allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS')),mc.cores=24)
 
 names(allstats)<-as.character(all.genes)
 
@@ -38,9 +38,9 @@ fulldf<-data.frame(Hugo_Symbol=unlist(sapply(allstats,function(x) as.character(x
 
 udf<-unique(fulldf)
 
-write.table(udf,file='allGeneMutationsInDermalsWithoutCommon.tsv',sep='\t',row.names=F,quote=F)
-write.table(subset(udf,Mutation_Status=="Germline"),file='germlineAllGeneMutationsInDermalsWithoutCommon.tsv',sep='\t',row.names=F,quote=F)
-write.table(subset(udf,Mutation_Status=="Somatic"),file='somaticAllGeneMutationsInDermalsWithoutCommon.tsv',sep='\t',row.names=F,quote=F)
+write.table(udf,file='allGeneMutationsInDermalsFiltered.tsv',sep='\t',row.names=F,quote=F)
+write.table(subset(udf,Mutation_Status=="Germline"),file='germlineAllGeneMutationsInDermalsFiltered.tsv',sep='\t',row.names=F,quote=F)
+write.table(subset(udf,Mutation_Status=="Somatic"),file='somaticAllGeneMutationsInDermalsFiltered.tsv',sep='\t',row.names=F,quote=F)
 
-for(f in c("allGeneMutationsInDermalsWithoutCommon.tsv","germlineAllGeneMutationsInDermalsWithoutCommon.tsv","somaticAllGeneMutationsInDermalsWithoutCommon.tsv"))
+for(f in c("allGeneMutationsInDermalsFiltered.tsv","germlineAllGeneMutationsInDermalsFiltered.tsv","somaticAllGeneMutationsInDermalsFiltered.tsv"))
     synStore(File(f,parentId='syn5605256'),used=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-03-07/mutsWithoutComms.R',wasExecuted=TRUE)))

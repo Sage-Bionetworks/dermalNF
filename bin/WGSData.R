@@ -181,8 +181,8 @@ getAllMutData<-function(allsoms=getMAFs('all'),filter=c()){
  #  print(paste('Separating out germline/somatic for sample',x))
     fout=which(x$FILTER%in%filter)
     if(length(fout)>0){
-        print(paste('Filtering out',length(fout),'out of',nrow(x),'because they are',paste(filter,collapse=','))
-        x=x[-fout,]
+        print(paste('Keeping',length(fout),'out of',nrow(x),'because they are',paste(filter,collapse=',')))
+        x=x[fout,]
     }
     is.germ=apply(x,1,function(y){
       (y[['Match_Norm_Seq_Allele1']]!=y[['Reference_Allele']] || y[['Reference_Allele']]!=y[['Match_Norm_Seq_Allele2']] )})
