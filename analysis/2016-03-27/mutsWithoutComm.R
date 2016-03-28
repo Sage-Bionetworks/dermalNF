@@ -19,10 +19,14 @@ impact=c("LOW",'MODERATE','HIGH')
 
   allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
   print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
-  som.germ=getAllMutData(allsoms)
+  som.germ=getAllMutData(allsoms,filter=c('PASS'))
 
-allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS')),mc.cores=24)
-
+#<<<<<<< HEAD
+#allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS',redo=TRUE)),mc.cores=8)
+#=======
+allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter=c('PASS'))),mc.cores=8)
+#>>>>>>> 3db7d3028bddad44e92c87be77ac24d9cd79ccc9
+#allstats<-lapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS')))
 names(allstats)<-as.character(all.genes)
 
 fulldf<-data.frame(Hugo_Symbol=unlist(sapply(allstats,function(x) as.character(x$Hugo_Symbol))),

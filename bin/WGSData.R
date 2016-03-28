@@ -7,12 +7,20 @@ library(data.table)
 
 
 ##read in all cancer gene mutations
-if(!exists('cancer.gene.muts'))
-  cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
-if(!exists('all.gene.muts'))
-  all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
 
-doPatientHeatmap<-function(mut.tab,title,fname){
+#cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
+
+if(!exists('all.gene.muts'))
+  all.gene.muts<-read.table(synGet('syn5839666')@filePath,header=T,sep='\t')
+
+if(!exists('cancer.gene.muts')){
+ cancer.genes=unique(read.table('../../data/Census_allTue Jan 19 18-58-56 2016.csv',sep=',',header=T,quote='"')$Gene.Symbol)
+ cancer.gene.muts<-subset(all.gene.muts,Hugo_Symbol%in%cancer.genes)
+}
+#  cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
+
+#all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
+doPatientHeatmap<-function(mut.tab,title,fname,minSamples=1){
   
   ##format into matrix
   mut.counts=mut.tab%>% 
@@ -26,7 +34,7 @@ doPatientHeatmap<-function(mut.tab,title,fname){
   names(variants)=num.variants$Hugo_Symbol
   
   ##now filter by minCount
-  mut.counts=mut.counts[which(apply(mut.counts,1,function(x) length(which(x>0)))>minPatients),]
+  mut.counts=mut.counts[which(apply(mut.counts,1,function(x) length(which(x>0)))>minSamples),]
   
   
   
@@ -62,7 +70,7 @@ panPatientPlots<-function(mutTable=all.gene.muts,minSamples=2,notIncluded=c()){
   
   title=paste('Number of somatic mutations in\n genes',
               ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
-              'that occur in at least',minPatients,'samples')
+              'that occur in at least',minSamples,'samples')
   fname=paste('somaticMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
   doPatientHeatmap(som.muts,title,paste(fname,'png',sep='.'))
   
@@ -179,7 +187,7 @@ getAllMutData<-function(allsoms=getMAFs('all'),filter=c()){
   ##now split out somatic or germline
   som.germ<<-lapply(allmuts,function(x){
  #  print(paste('Separating out germline/somatic for sample',x))
-    fout=which(x$FILTER%in%filter)
+    fout=which(as.character(x$FILTER)%in%filter)
     if(length(fout)>0){
         print(paste('Keeping',length(fout),'out of',nrow(x),'because they are',paste(filter,collapse=',')))
         x=x[fout,]
@@ -201,7 +209,7 @@ getAllMutData<-function(allsoms=getMAFs('all'),filter=c()){
 #'@param impact is a list of which mutations to include, defaults to all ('HIGH','MODERATE' and 'LOW')
 #'@param doPlot: if set to true, will plot some basic statistics about where and when this mutation occurs
 #'@param som.germ - the MAF file tables separated by whether or not the mutation is somatic or germline
-getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,som.germ=getAllMutData(),filter=c(),redo=FALSE){
+getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,filter=c(),som.germ=getAllMutData(filter=filter),redo=FALSE){
 
   ##first check to see if we have the file already on synapse
   if(gene%in%all.gene.muts$Hugo_Symbol && !redo){
