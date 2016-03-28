@@ -7,14 +7,20 @@ library(data.table)
 
 
 ##read in all cancer gene mutations
-if(!exists('cancer.gene.muts'))
-  cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
+
 #cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
 
 if(!exists('all.gene.muts'))
   all.gene.muts<-read.table(synGet('syn5839666')@filePath,header=T,sep='\t')
+
+if(!exists('cancer.gene.muts')){
+ cancer.genes=unique(read.table('../../data/Census_allTue Jan 19 18-58-56 2016.csv',sep=',',header=T,quote='"')$Gene.Symbol)
+ cancer.gene.muts<-subset(all.gene.muts,Hugo_Symbol%in%cancer.genes)
+}
+#  cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
+
 #all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
-doPatientHeatmap<-function(mut.tab,title,fname){
+doPatientHeatmap<-function(mut.tab,title,fname,minSamples=1){
   
   ##format into matrix
   mut.counts=mut.tab%>% 
@@ -28,7 +34,7 @@ doPatientHeatmap<-function(mut.tab,title,fname){
   names(variants)=num.variants$Hugo_Symbol
   
   ##now filter by minCount
-  mut.counts=mut.counts[which(apply(mut.counts,1,function(x) length(which(x>0)))>minPatients),]
+  mut.counts=mut.counts[which(apply(mut.counts,1,function(x) length(which(x>0)))>minSamples),]
   
   
   
@@ -64,7 +70,7 @@ panPatientPlots<-function(mutTable=all.gene.muts,minSamples=2,notIncluded=c()){
   
   title=paste('Number of somatic mutations in\n genes',
               ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
-              'that occur in at least',minPatients,'samples')
+              'that occur in at least',minSamples,'samples')
   fname=paste('somaticMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
   doPatientHeatmap(som.muts,title,paste(fname,'png',sep='.'))
   
