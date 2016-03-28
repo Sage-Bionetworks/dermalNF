@@ -203,7 +203,7 @@ getAllMutData<-function(allsoms=getMAFs('all'),filter=c()){
 #'@param impact is a list of which mutations to include, defaults to all ('HIGH','MODERATE' and 'LOW')
 #'@param doPlot: if set to true, will plot some basic statistics about where and when this mutation occurs
 #'@param som.germ - the MAF file tables separated by whether or not the mutation is somatic or germline
-getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,som.germ=getAllMutData(),filter=c(),redo=FALSE){
+getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),doPlot=FALSE,filter=c(),som.germ=getAllMutData(filter=filter),redo=FALSE){
 
   ##first check to see if we have the file already on synapse
   if(gene%in%all.gene.muts$Hugo_Symbol && !redo){

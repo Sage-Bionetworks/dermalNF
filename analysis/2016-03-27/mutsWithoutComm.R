@@ -19,7 +19,7 @@ impact=c("LOW",'MODERATE','HIGH')
 
   allsoms=allsoms[unlist(sapply(impact,grep,allsoms$entity.name)),]
   print(paste("Found",nrow(allsoms),'with',paste(impact,collapse=' or '),'impact'))
-  som.germ=getAllMutData(allsoms)
+  som.germ=getAllMutData(allsoms,filter=c('PASS'))
 
 allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter=c('PASS'))),mc.cores=8)
 #allstats<-lapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS')))
