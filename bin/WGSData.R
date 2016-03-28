@@ -9,9 +9,11 @@ library(data.table)
 ##read in all cancer gene mutations
 if(!exists('cancer.gene.muts'))
   cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
-if(!exists('all.gene.muts'))
-  all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
+#cancer.gene.muts<-read.table(synGet('syn5611520')@filePath,header=T,sep='\t')
 
+if(!exists('all.gene.muts'))
+  all.gene.muts<-read.table(synGet('syn5839666')@filePath,header=T,sep='\t')
+#all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
 doPatientHeatmap<-function(mut.tab,title,fname){
   
   ##format into matrix
@@ -179,7 +181,7 @@ getAllMutData<-function(allsoms=getMAFs('all'),filter=c()){
   ##now split out somatic or germline
   som.germ<<-lapply(allmuts,function(x){
  #  print(paste('Separating out germline/somatic for sample',x))
-    fout=which(x$FILTER%in%filter)
+    fout=which(as.character(x$FILTER)%in%filter)
     if(length(fout)>0){
         print(paste('Keeping',length(fout),'out of',nrow(x),'because they are',paste(filter,collapse=',')))
         x=x[fout,]
