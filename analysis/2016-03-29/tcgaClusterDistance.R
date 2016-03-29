@@ -12,9 +12,12 @@ rna.counts<-rna_count_matrix(doLogNorm=T,minCount=2)
 expr.pats<-toPatientId(colnames(alldat))
 gene.symbs<-sapply(alldat[,1],function(x) unlist(strsplit(x,split='|',fixed=T))[1])
 fpkm.idx <- match(rownames(rna.fpkm),gene.symbs)
-#counts.idx <-match(rownames(rna.counts),gene.symbs)
+counts.idx <-match(rownames(rna.counts),gene.symbs)
 
 disdat<-alldat[,intersect(colnames(alldat),unlist(tumsByDis))]
+dis.vec<-sapply(colnames(disdat),function(x) names(tumsByDis)[grep(x,tumsByDis)])
+
+
 ##can we just get all cors
 full.mat<-cbind(rna.counts[!is.na(counts.idx),],disdat[counts.idx[!is.na(counts.idx)],])
 
