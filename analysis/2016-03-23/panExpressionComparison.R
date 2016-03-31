@@ -7,12 +7,12 @@ source('../../bin/TcgaMutationalData.R')
 
 source("../../bin/dermalNFData.R")
 rna.counts<-rna_count_matrix(doLogNorm=T,minCount=2)
-rna.fpkm<-rna_fpkm_matrix()
+#rna.fpkm<-rna_fpkm_matrix()
 
 expr.pats<-toPatientId(colnames(alldat))
 gene.symbs<-sapply(alldat[,1],function(x) unlist(strsplit(x,split='|',fixed=T))[1])
 fpkm.idx <- match(rownames(rna.fpkm),gene.symbs)
-counts.idx <-match(rownames(rna.counts),gene.symbs)
+#counts.idx <-match(rownames(rna.counts),gene.symbs)
 
 disdat<-alldat[,intersect(colnames(alldat),unlist(tumsByDis))]
 ##can we just get all cors
