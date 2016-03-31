@@ -218,6 +218,11 @@ getMutationStatsForGene<-function(gene='NF1',impact=c('HIGH','MODERATE','LOW'),d
     print(paste('Found gene',gene,' already processed, will analyze mutations of all impact (impact argument ignored'))
     df=subset(all.gene.muts,Hugo_Symbol==gene)
   }else{
+    print(paste('No evidence of',gene,'in mutation data'))
+    if(!redo){
+      print('Set redo=TRUE to double check')
+      return(data.frame())
+    }
     if(is.null(som.germ)){
       allsoms<-synapseQuery("select * from entity where parentId=='syn5578958'")
       print(paste('Selecting from',nrow(allsoms),'mutation files'))
