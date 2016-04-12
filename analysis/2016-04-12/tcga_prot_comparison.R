@@ -7,8 +7,8 @@ dermal.prots<-prot_normalized()
 #pancan.rppa<-read.table(synGet('syn1710429')@filePath,comment='',header=T,row.names=1)
 
 
-pancan.rppa<-read.table('TCGA-PANCAN16-RBN.csv',sep=',',header=T)
-pancan.meta<-read.table('TCGA-PANCAN16-RBN-meta.tsv',sep='\t',header=T)
+pancan.rppa<-read.table(synGet('syn5908448')@filePath,sep=',',header=T)
+#pancan.meta<-read.table('TCGA-PANCAN16-RBN-meta.tsv',sep='\t',header=T)
 
 gene.names<-list(Tuberin='TSC2',YB.1='YBX1',STAT5.alpha='STAT5A',
                  STAT3_pY705='STAT3',Shc_pY317='SCH1',Transglutaminase='TGM2',
@@ -19,7 +19,7 @@ gene.names<-list(Tuberin='TSC2',YB.1='YBX1',STAT5.alpha='STAT5A',
                  MEK1_pS217_S221='MAP2K1',Heregulin='NRG1',ETS.1='ETS1',ER.alpha='ESR1',
                  Bap1.c.4='BAP1',AMPK_alpha='AMPK',Annexin.1='ANXA1',Annexin_VII='ANXA7',
                  P.Cadherin='CDH3',N.Cadherin='CDH2',Myosin.IIa_pS1943='MYH9',c.Jun_pS73='JUN',
-                 c.Kit='KIT',c.Myc='MYC',C.Raf='RAF1',AMPK_alpha='PRKAA1')
+                 c.Kit='KIT',c.Myc='MYC',C.Raf='RAF1',AMPK_alpha='PRKAA1',MIG.6='ERRFI1',B.Raf='BRAF')
 
 
 matches<-sapply(dermal.prots$Protein,function(x){
