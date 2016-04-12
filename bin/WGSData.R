@@ -435,17 +435,19 @@ heatmapFromMutDf<-function(df=getMutationStatsForGene(gene='NF1'),fname='NF1muta
   ##first start with matrix of counts
   countmat=df %>% group_by(Sample_ID,Protein_Change) %>% summarize(Count=n()) %>% acast(Sample_ID~Protein_Change,value.var='Count',fill=0)
   mut_ann=sapply(colnames(countmat),function(x) as.character(df[match(x,as.character(df$Protein_Change)),'Mutation_Type']))
-  countmat<-countmat[order(rowSums(countmat)),]
-  countmat<-countmat[,order(colSums(countmat))]
-  
-  ##now separate out countmap by germline and somatic
+  if(is.na(nrow(countmat)))
+    countmat<-countmat[order(rowSums(countmat)),]
+  if(is.na(ncol(countmat)))
+    countmat<-countmat[,order(colSums(countmat))]
+  print(dim(countmat))
+    ##now separate out countmap by germline and somatic
  # par(mfrow=c(2,1))
   soms=grep('tissue',rownames(countmat))
   if(length(soms)>0){
-    pheatmap(countmat[soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionSomaticCount',fname,sep=''))
-    pheatmap(countmat[-soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep=''))
+    try(pheatmap(countmat[soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionSomaticCount',fname,sep='')))
+    try(pheatmap(countmat[-soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep='')))
   }else{
-    pheatmap(countmat,cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep=''))
+    try(pheatmap(countmat,cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep='')))
   
   }
   
@@ -470,10 +472,10 @@ heatmapFromMutDf<-function(df=getMutationStatsForGene(gene='NF1'),fname='NF1muta
            cellheight=10,cellwidth=10,
            legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,filename=paste('positionTypeGermline',fname,sep=''))
   }else{
-    pheatmap(typemat,color = c('white',rainbow(length(types))),
+    try(pheatmap(typemat,color = c('white',rainbow(length(types))),
              cluster_rows=F,cluster_cols=F,
              cellheight=10,cellwidth=10,
-             legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,filename=paste('positionTypeGermline',fname,sep=''))
+             legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,filename=paste('positionTypeGermline',fname,sep='')))
     
   }
     
