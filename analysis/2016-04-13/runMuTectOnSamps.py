@@ -23,24 +23,42 @@ def runMutect(normfile,tumfile,out_prefix):
     print cmd
 
 
-def updateBams(bamfile): 
+def updateBams(bamfile,cmdfile=''): 
+'''
+    The BAM files require adding read groups, re-ordering, and indexing before they can be run by MuTect
+'''
     outfile=re.sub('.bam','_rg.bam',bamfile)
     picmd='java -jar ~/picard-tools-2.1.1/picard.jar AddOrReplaceReadGroups \
            I=%s O=%s RGID=1 RGLB=hg19 RGPL=illumina RGPU=dragen RGSM=%s'%(bamfile,outfile,re.sub('.bam','',bamfile))
     print picmd
     if not os.path.exists(outfile):
-	os.system(picmd)
+    	if cmdfile=='':
+	    print 'Adding read groups to make %s'%(outfile)
+	    os.system(picmd)
+	else:
+	    cmdfile.write('echo "Adding read groups to make %s"\n%s\n'%(outfile,picmd))
 
     ordered=re.sub('.bam','_ordered.bam',outfile)
     pic2cmd='java -jar ~/picard-tools-2.1.1/picard.jar ReorderSam INPUT=%s OUTPUT=%s REFERENCE=%s'%(outfile,ordered,'../../lib/ucsc.hg19.fasta')
     if not os.path.exists(ordered):
-	print pic2cmd
-	os.system(pic2cmd)
+	ustr='Re-ordering BAM file to make %s'%(ordered)
+	if cmdfile=='':	
+	    print ustr
+	    os.system(pic2cmd)
+	else:
+	    cmdfile.write('echo "'+ustr+'"\n'+cmdfile+'\n')
 
+    ind='samtools index %s'%(ordered)
+    ustr='Running samtools to index %s'%(ordered)
+    if cmdfile=='':
+	print ustr
+	os.system(ind)
+    else:
+	cmdfile.write('echo "'+ustr+'"\n'+ind+'\n')
     return ordered
 
 
-def getBamPath(synid):
+def getBamPath(synid,cmdfile=''):
     '''
     Quick function to find bamfile
     '''
@@ -49,7 +67,10 @@ def getBamPath(synid):
     awscmd='aws s3 cp %s %s'%(os.path.join(bamrepo,bamf),bamf)
     print awscmd
     if not os.path.exists(bamf):
-    	os.system(awscmd)
+	if cmdfile=='':	
+    	    os.system(awscmd)
+	else:
+	    cmdfile.write('echo "Getting %s from AWS"\n%s\n'%(bamf,awscmd))
     
     return bamf
 
@@ -68,7 +89,11 @@ for p in allpats:
     tuminds=tuminds[0:1]
     for tu in tuminds:
         #run pileup command
-        bf=updateBams(getBamPath(tu))
+        cmdfile=open(tu+'cmd.sh','w')
+        cmdfile.write('#/bin/bash\n')
+        bf=updateBams(getBamPath(tu),cmdfile)
         outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
         print outfile
-        cmd = runMutect(normfile,bf,outfile)
+        cmd = runMutect(normfile,bf,outfile,cmdfile)
+	cmdfile.close()
+

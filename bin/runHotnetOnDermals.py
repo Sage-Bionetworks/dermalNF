@@ -7,7 +7,7 @@ format for input into hotnet2
 import os,sys,re
 hotnetdir='~/hotnet2/'
 
-os.system('Rscript ./formatHotnetData.R')
+os.system('Rscript ../../bin/formatHotnetData.R')
 
 afiles=[a for a in os.listdir('./') if 'tab' in a]
 heatfiles=[]

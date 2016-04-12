@@ -1,2 +1,2 @@
-python ../../bin/runCometOnDermals.py
-python ../../bin/runMuHotnetOnDermals.py
+#python ../../bin/runCometOnDermals.py &
+python ../../bin/runHotnetOnDermals.py 

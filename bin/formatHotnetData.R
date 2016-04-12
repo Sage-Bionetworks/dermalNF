@@ -8,7 +8,9 @@ require(dplyr)
 ##get all cancer mutations
 #allCancerMuts=synGet('syn5611520')
 
-allMuts <- synGet("syn5839666")
+##maybe we don't want filtered, want to include common variants!
+#allMuts <- synGet("syn5839666")
+allMuts <-synGet("syn5713423")
 ##get all mutations
 
 ##get expressed genes!
