@@ -23,8 +23,7 @@ def runMutect(normfile,tumfile,out_prefix,cmdfile=''):
     else:
 	cmdfile.write('sudo apt-get -f install oracle-java7-set-default\n') 
     for iv in intervals:
-	cmd='java -jar ~/GenomeAnalysisTK.jar --analysis_type MuTect2 --reference_sequence %s --input_file:normal %s\
-	 --input_file:tumor %s --out %s --interval %s'%(reference,normfile,tumfile,out_prefix+'_'+iv+'.vcf',iv)
+	cmd='java -jar ~/GenomeAnalysisTK.jar --analysis_type MuTect2 --reference_sequence %s --input_file:normal %s --input_file:tumor %s --out %s --interval %s'%(reference,normfile,tumfile,out_prefix+'_'+iv+'.vcf',iv)
 
    # cmd='java -jar ~/muTect/muTect-1.1.4.jar --analysis_type MuTect --reference_sequence %s --cosmic %s \
    #      --dbsnp %s --input_file:normal %s --input_file:tumor %s --out %s -cov %s'%(reference,cosmic,dbsnp,normfile,tumfile,out_prefix+'.out',out_prefix+'_coverage.wig.txt')
@@ -48,16 +47,16 @@ def updateBams(bamfile,cmdfile=''):
     The BAM files require adding read groups, re-ordering, and indexing before they can be run by MuTect
     '''
     outfile=re.sub('.bam','_rg.bam',bamfile)
-    picmd='sudo apt-get -f install oracle-java8-set-default\njava -jar ~/picard-tools-2.1.1/picard.jar AddOrReplaceReadGroups \
-           I=%s O=%s RGID=1 RGLB=hg19 RGPL=illumina RGPU=dragen RGSM=%s'%(bamfile,outfile,re.sub('.bam','',bamfile))
+    picmd='sudo apt-get -f install oracle-java8-set-default\njava -jar ~/picard-tools-2.1.1/picard.jar AddOrReplaceReadGroups I=%s O=%s RGID=1 RGLB=hg19 RGPL=illumina RGPU=dragen RGSM=%s'%(bamfile,outfile,re.sub('.bam','',bamfile))
 #    print picmd
     if not os.path.exists(outfile):
     	if cmdfile=='':
 	    print 'Adding read groups to make %s'%(outfile)
 	    os.system(picmd)
+	    os.system('rm '+bamfile)
 	else:
 	    cmdfile.write('echo "Adding read groups to make %s"\n%s\n'%(outfile,picmd))
-	    cmdfile.write('rm '+bamfile+'\n')
+    
     ordered=re.sub('.bam','_ordered.bam',outfile)
     pic2cmd='java -jar ~/picard-tools-2.1.1/picard.jar ReorderSam INPUT=%s OUTPUT=%s REFERENCE=%s'%(outfile,ordered,'../../lib/ucsc.hg19.fasta')
     if not os.path.exists(ordered):
@@ -65,6 +64,7 @@ def updateBams(bamfile,cmdfile=''):
 	if cmdfile=='':
 	    print ustr
 	    os.system(pic2cmd)
+	    os.system('rm '+outfile)
 	else:
 	    cmdfile.write('echo "'+ustr+'"\n'+pic2cmd+'\nrm '+outfile+'\n')
 
@@ -77,7 +77,10 @@ def updateBams(bamfile,cmdfile=''):
     else:
         cmdfile.write('echo "'+ustr+'"\n'+ind+'\n')
 
-
+   # if cmdfile=='':
+#	print 'Removing intermedidate bams'
+#    else:
+#	cmdfile.write('rm '+bamfile+'\n'+'rm '+outfile+'\n')
     return ordered
 
 
@@ -88,6 +91,7 @@ def getBamPath(synid,cmdfile=''):
     f=syn.get(synid,downloadFile=False).name
     bamf=re.sub(".vcf",'.bam',f)
     awscmd='aws s3 cp %s %s'%(os.path.join(bamrepo,bamf),bamf)
+    #awscmd='aws s3 sync %s . --include %s'%(bamrepo,bamf)
  #   print awscmd
     if not os.path.exists(bamf):
 	if cmdfile=='':
