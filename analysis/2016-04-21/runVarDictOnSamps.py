@@ -16,14 +16,15 @@ syn.login()
 def runVarDict(normfile,tumfile,normsamp,tumsamp,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
 
-    vdcmd="/home/ubuntu/VarDict/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3"%(reference,normsamp,normfile,tumfile)
-    tscmd="/home/ubuntu/VarDict/testsomatic.R"
-    vcfcmd="/home/ubuntu/VarDict/var2vcf_somatic.pl -N %s|%s -f 0.01"%(normsamp,tumsamp)
+    vdcmd="vdcmd=\"/home/ubuntu/VarDict/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3\""%(reference,normsamp,normfile,tumfile)
+    tscmd="tscmd=\"/home/ubuntu/VarDict/testsomatic.R\""
+    vcfcmd="vcfcmd=\"/home/ubuntu/VarDict/var2vcf_somatic.pl -N %s|%s -f 0.01\""%(normsamp,tumsamp)
 
     if cmdfile=='':
-        os.system(vdcmd+'|'+tscmd+'|'+vcfcmd)
+        os.system(vdcmd+';'+tscmd+';'+vcfcmd)
+        os.system('$vdcmd|$tscmd|$vcfcmd')
     else:
-        cmdfile.write(vdcmd+'|'+tscmd+'|'+vcfcmd+'\n')
+        cmdfile.write(vdcmd+'\n'+tscmd+'\n'+vcfcmd+'\n'+'$vdcmd|$tscmd|$vcfcmd')
 
 def runMutect(normfile,tumfile,out_prefix,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
