@@ -139,6 +139,8 @@ for p in allpats:
         cmdfile.write('#/bin/bash\n')
         bf=updateBams(getBamPath(tu,cmdfile),cmdfile)
         outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
-    #    print outfile
-        cmd = runVarDict(normfile,bf,outfile,cmdfile)
+        normsamp='patient_%s_normal_%s'%(p,normind[0])
+        tumsamp='tumor_%s'%(tum)
+
+        cmd = runVarDict(normfile,bf,normsamp,tumsamp,cmdfile)
 	cmdfile.close()
