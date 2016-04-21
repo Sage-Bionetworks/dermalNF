@@ -16,9 +16,9 @@ syn.login()
 def runVarDict(normfile,tumfile,normsamp,tumsamp,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
 
-    vdcmd="/home/ubuntu/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3"%(reference,normsamp,normfile,tumfile)
-    tscmd="/home/ubuntu/testsomatic.R"
-    vcfcmd="/home/ubuntu/var2vcf_somatic.pl -N %s|%s -f 0.01"%(normsamp,tumsamp)
+    vdcmd="/home/ubuntu/VarDict/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3"%(reference,normsamp,normfile,tumfile)
+    tscmd="/home/ubuntu/VarDict/testsomatic.R"
+    vcfcmd="/home/ubuntu/VarDict/var2vcf_somatic.pl -N %s|%s -f 0.01"%(normsamp,tumsamp)
 
     if cmdfile=='':
         os.system(vdcmd+'|'+tscmd+'|'+vcfcmd)
@@ -140,7 +140,7 @@ for p in allpats:
         bf=updateBams(getBamPath(tu,cmdfile),cmdfile)
         outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
         normsamp='patient_%s_normal_%s'%(p,normind[0])
-        tumsamp='tumor_%s'%(tum)
+        tumsamp='tumor_%s'%(tu)
 
         cmd = runVarDict(normfile,bf,normsamp,tumsamp,cmdfile)
 	cmdfile.close()
