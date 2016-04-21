@@ -111,7 +111,10 @@ for p in allpats:
         next
     normscript=open('patient'+p+'_'+normind[0]+'bamProcessing.sh','w')
     normfile=updateBams(getBamPath(normind[0],normscript),normscript)
+    normscript.write('cat "\\npatient '+p+' complete">> normstats\n')
     normscript.close()
+
+
 
     tuminds=[df['WGS'][ind] for ind,a in enumerate(df['DnaID']) if (a!='PBMC' and not math.isnan(float(a)))]
 #    tuminds=tuminds[0:1]
