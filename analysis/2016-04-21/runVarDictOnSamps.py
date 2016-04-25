@@ -16,15 +16,29 @@ syn.login()
 def runVarDict(normfile,tumfile,normsamp,tumsamp,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
 
-    vdcmd="vdcmd=\"/home/ubuntu/VarDict/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3\""%(reference,normsamp,normfile,tumfile)
+    vdcmd="vdcmd=\"/home/ubuntu/VarDict/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3"%(reference,normsamp,normfile,tumfile)
     tscmd="tscmd=\"/home/ubuntu/VarDict/testsomatic.R\""
     vcfcmd="vcfcmd=\"/home/ubuntu/VarDict/var2vcf_somatic.pl -N %s|%s -f 0.01\""%(normsamp,tumsamp)
-
+    outpre=normsamp+'_'+tumsamp+'.vcf'
+    bf=range(1,11)
     if cmdfile=='':
-        os.system(vdcmd+';'+tscmd+';'+vcfcmd)
-        os.system('$vdcmd|$tscmd|$vcfcmd')
+        os.system(tscmd+';'+vcfcmd)
+        for b in bf:
+	    bedfile='/home/ubuntu/VarDict/hg19_knownGene.bed.%d'%(b)    
+            newvd=vdcmd+' -g 3 %s\"'%(bedfile)
+            os.system(newvd)
+            os.system('$vdcmd|$tscmd|$vcfcmd>'+outpre+'.'+str(b))
+	allvcf=' '.join([outpre+'.'+str(b) for b in bf])
+        os.system('bcftools merge '+allvcf+' -o '+outpre)
     else:
-        cmdfile.write(vdcmd+'\n'+tscmd+'\n'+vcfcmd+'\n'+'$vdcmd|$tscmd|$vcfcmd')
+        cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
+        for b in bf:
+	    bedfile='/home/ubuntu/VarDict/hg19_knownGene.bed.%d'%(b)    
+            newvd=vdcmd+' -g 3 %s\"'%(bedfile)
+            cmdfile.write(newvd+'\n')
+            cmdfile.write('$vdcmd|$tscmd|$vcfcmd>%s.%d\n'%(outpre,b))
+	allvcf=' '.join([outpre+'.'+str(b) for b in bf])
+        cmdfile.write('bcftools merge '+allvcf+' -o '+outpre+'\n')
 
 def runMutect(normfile,tumfile,out_prefix,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
