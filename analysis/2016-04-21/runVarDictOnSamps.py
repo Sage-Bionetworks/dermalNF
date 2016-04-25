@@ -20,7 +20,7 @@ def runVarDict(normfile,tumfile,normsamp,tumsamp,cmdfile=''):
     tscmd="tscmd=\"/home/ubuntu/VarDict/testsomatic.R\""
     vcfcmd="vcfcmd=\"/home/ubuntu/VarDict/var2vcf_somatic.pl -N %s|%s -f 0.01\""%(normsamp,tumsamp)
     outpre=normsamp+'_'+tumsamp+'.vcf'
-    bf=range(1,11)
+    bf=range(1,21)
     if cmdfile=='':
         os.system(tscmd+';'+vcfcmd)
         for b in bf:
