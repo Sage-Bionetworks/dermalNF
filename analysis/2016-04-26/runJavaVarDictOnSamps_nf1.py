@@ -13,12 +13,15 @@ syn.login()
 #stcommand='samtools mpileup -f ../../../lib/ucsc.hg19.fasta '
 #vscommand='java -r ~/VarScan.v2.3.9.jar pileup2snp'
 
+vd_dir='/home/ubuntu/VarDictJava/'
 def runVarDictOnBed(normfile,tumfile,normsamp,tumsamp,bedfile,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
+    #<path_to_vardict_folder>/build/install/VarDict/bin/VarDict -G /path/to/hg19.fa -f $AF_THR -N tumor_sample_name -b "/path/to/tumor.bam|/path/to/normal.bam" -z -F -c 1 -S 2 -E 3 -g 4 /path/to/my.bed | VarDict/testsomatic.R | VarDict/var2vcf_somatic.pl -N "tumor_sample_name|normal_sample_name" -f $AF_THR
 
-    vdcmd="vdcmd=\"/home/ubuntu/VarDict/vardict -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3"%(reference,normsamp,normfile,tumfile)
-    tscmd="tscmd=\"/home/ubuntu/VarDict/testsomatic.R\""
-    vcfcmd="vcfcmd=\"/home/ubuntu/VarDict/var2vcf_somatic.pl -N %s|%s -f 0.01\""%(normsamp,tumsamp)
+    vdex=os.path.join(vd_dir,'build/install/VarDict/bin/VarDict')
+    vdcmd="vdcmd=\"%s -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3 -g 4"%(vdex,reference,tumsamp,normfile,tumfile)
+    tscmd="tscmd=\"%s/testsomatic.R\""%(os.path.join(vd_dir,'VarDict'))
+    vcfcmd="vcfcmd=\"%s/var2vcf_somatic.pl -N %s|%s -f 0.01\""%(os.path.join(vd_dir,'VarDict'),tumsamp,normsamp)
     outpre=normsamp+'_'+tumsamp+'.vcf'
     if cmdfile=='':
         os.system(tscmd+';'+vcfcmd)
