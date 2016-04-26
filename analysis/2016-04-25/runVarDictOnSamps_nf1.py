@@ -24,12 +24,12 @@ def runVarDictOnBed(normfile,tumfile,normsamp,tumsamp,bedfile,cmdfile=''):
         os.system(tscmd+';'+vcfcmd)
         newvd=vdcmd+' -g 3 %s\"'%(bedfile)
         os.system(newvd)
-        os.system('$vdcmd|$tscmd|$vcfcmd>'+outpre+'.'+str(b))
+        os.system('$vdcmd|$tscmd|$vcfcmd>'+outpre)
     else:
         cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
         newvd=vdcmd+' -g 3 %s\"'%(bedfile)
         cmdfile.write(newvd+'\n')
-        cmdfile.write('$vdcmd|$tscmd|$vcfcmd>%s.%d\n'%(outpre,b))
+        cmdfile.write('$vdcmd|$tscmd|$vcfcmd>%s\n'%(outpre))
 
 
 def runVarDict(normfile,tumfile,normsamp,tumsamp,cmdfile=''):
