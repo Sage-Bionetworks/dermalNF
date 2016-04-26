@@ -19,18 +19,18 @@ def runVarDictOnBed(normfile,tumfile,normsamp,tumsamp,bedfile,cmdfile=''):
     #<path_to_vardict_folder>/build/install/VarDict/bin/VarDict -G /path/to/hg19.fa -f $AF_THR -N tumor_sample_name -b "/path/to/tumor.bam|/path/to/normal.bam" -z -F -c 1 -S 2 -E 3 -g 4 /path/to/my.bed | VarDict/testsomatic.R | VarDict/var2vcf_somatic.pl -N "tumor_sample_name|normal_sample_name" -f $AF_THR
 
     vdex=os.path.join(vd_dir,'build/install/VarDict/bin/VarDict')
-    vdcmd="vdcmd=\"%s -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3 -g 4"%(vdex,reference,tumsamp,normfile,tumfile)
+    vdcmd="vdcmd=\"%s -G %s -f 0.01 -N %s -b %s|%s -c 1 -S 2 -E 3"%(vdex,reference,tumsamp,normfile,tumfile)
     tscmd="tscmd=\"%s/testsomatic.R\""%(os.path.join(vd_dir,'VarDict'))
     vcfcmd="vcfcmd=\"%s/var2vcf_somatic.pl -N %s|%s -f 0.01\""%(os.path.join(vd_dir,'VarDict'),tumsamp,normsamp)
     outpre=normsamp+'_'+tumsamp+'.vcf'
     if cmdfile=='':
         os.system(tscmd+';'+vcfcmd)
-        newvd=vdcmd+' -g 3 %s\"'%(bedfile)
+        newvd=vdcmd+' -g 4 %s\"'%(bedfile)
         os.system(newvd)
         os.system('$vdcmd|$tscmd|$vcfcmd>'+outpre)
     else:
         cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
-        newvd=vdcmd+' -g 3 %s\"'%(bedfile)
+        newvd=vdcmd+' -g 4 %s\"'%(bedfile)
         cmdfile.write(newvd+'\n')
         cmdfile.write('$vdcmd|$tscmd|$vcfcmd>%s\n'%(outpre))
 
