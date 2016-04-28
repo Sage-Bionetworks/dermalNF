@@ -16,22 +16,24 @@ syn.login()
 nf1reg='-R chr17:29421944-29704695:NF1'
 
 vd_dir='/home/ubuntu/VarDictJava/'
-def runVarDictOnBed(normfile,tumfile,normsamp,tumsamp,bedfile,cmdfile=''):
+def runVarDictOnBed(normfile,tumfile,normsamp,tumsamp,bedfile,suffix='',addPre=True,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
     #<path_to_vardict_folder>/build/install/VarDict/bin/VarDict -G /path/to/hg19.fa -f $AF_THR -N tumor_sample_name -b "/path/to/tumor.bam|/path/to/normal.bam" -z -F -c 1 -S 2 -E 3 -g 4 /path/to/my.bed | VarDict/testsomatic.R | VarDict/var2vcf_somatic.pl -N "tumor_sample_name|normal_sample_name" -f $AF_THR
-    bedfile = nf1reg
+   # bedfile = nf1reg
     vdex=os.path.join(vd_dir,'build/install/VarDict/bin/VarDict')
     vdcmd="vdcmd=\"%s -G %s -f 0.01 -N %s -b \\\"%s|%s\\\" -c 1 -S 2 -E 3"%(vdex,reference,tumsamp,tumfile,normfile)
     tscmd="tscmd=\"%s/testsomatic.R\""%(os.path.join(vd_dir,'VarDict'))
     vcfcmd="vcfcmd=\"%s/var2vcf_paired.pl -N \\\"%s|%s\\\" -f 0.01\""%(os.path.join(vd_dir,'VarDict'),tumsamp,normsamp)
-    outpre=normsamp+'_'+tumsamp+'.vcf'
+    outpre=normsamp+'_'+tumsamp+'.vcf'+suffix
     if cmdfile=='':
-        os.system(tscmd+';'+vcfcmd)
+        if addPre:
+	    os.system(tscmd+';'+vcfcmd)
         newvd=vdcmd+' -g 4 %s\"'%(bedfile)
         os.system(newvd)
         os.system('$vdcmd|$tscmd|$vcfcmd>'+outpre)
     else:
-        cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
+	if addPre:
+             cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
         newvd=vdcmd+' -g 4 %s\"'%(bedfile)
         cmdfile.write(newvd+'\n')
         cmdfile.write('$vdcmd|$tscmd|$vcfcmd>%s\n'%(outpre))
@@ -58,22 +60,15 @@ def runVarDict(normfile,tumfile,normsamp,tumsamp,cmdfile=''):
     bf=range(1,21)
     if cmdfile=='':
         os.system(tscmd+';'+vcfcmd)
-        for b in bf:
-	    bedfile='/home/ubuntu/VarDict/hg19_knownGene.bed.%d'%(b)
-            newvd=vdcmd+' -g 3 %s\"'%(bedfile)
-            os.system(newvd)
-            os.system('$vdcmd|$tscmd|$vcfcmd>'+outpre+'.'+str(b))
-	allvcf=' '.join([outpre+'.'+str(b) for b in bf])
-        os.system('bcftools merge '+allvcf+' -o '+outpre)
     else:
-        cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
-        for b in bf:
-	    bedfile='/home/ubuntu/VarDict/hg19_knownGene.bed.%d'%(b)
-            newvd=vdcmd+' -g 3 %s\"'%(bedfile)
-            cmdfile.write(newvd+'\n')
-            cmdfile.write('$vdcmd|$tscmd|$vcfcmd>%s.%d\n'%(outpre,b))
-	allvcf=' '.join([outpre+'.'+str(b) for b in bf])
-        cmdfile.write('bcftools merge '+allvcf+' -o '+outpre+'\n')
+	cmdfile.write(tscmd+'\n'+vcfcmd+'\n')
+	 
+    for b in bf:
+	bedfile='/home/ubuntu/VarDict/hg19_knownGeneRed.bed.%d'%(b)
+        vcf=runVarDictOnBed(normfile,tumfile,normsamp,tumsamp,bedfile,suffix='.%d'%(b),addPre=False,cmdfile=cmdfile)
+        newvcf=runSnpEff(vcf,cmdfile)
+#	allvcf=' '.join([outpre+'.'+str(b) for b in bf])
+#        os.system('bcftools merge '+allvcf+' -o '+outpre)
 
 def runMutect(normfile,tumfile,out_prefix,cmdfile=''):
     reference='/home/ubuntu/dermalNF/lib/ucsc.hg19.fasta'
@@ -191,6 +186,6 @@ for p in allpats:
         outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
         normsamp='patient_%s_normal_%s'%(p,normind[0])
         tumsamp='patient_%s_tumor_%s'%(p,tu)
-        vcf = runVarDictOnBed(normfile,bf,normsamp,tumsamp,'/home/ubuntu/VarDict/test.bed',cmdfile)	
-	newvcf= runSnpEff(vcf,cmdfile)
+        vcf = runVarDict(normfile,bf,normsamp,tumsamp,cmdfile)	
+#	newvcf= runSnpEff(vcf,cmdfile)
 	cmdfile.close()

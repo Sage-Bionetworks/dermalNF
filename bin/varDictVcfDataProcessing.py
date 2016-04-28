@@ -2,6 +2,7 @@
 This is the primary script that can be used to process the VCFs after GTK is run
 on them. It requires an installation of vcf2maf.pl and VEP.
 '''
+import sys
 
 ##VCF2MAF installation:
 vcf2maf='perl ../../../vcf2maf-master/vcf2maf.pl'
@@ -43,8 +44,9 @@ syn.login()
 #        bloodfile=re.sub('.vcf','',syn_files[blood[0]])
 #    else:
 #        bloodfile=''
-
-vcfdir='/mnt/huge/dermalWgs/varDict'
+vcfdir=sys.argv[1]
+if vcfdir=='':
+	vcfdir='/mnt/huge/dermalWgs/vdj'
 for outvcf in os.listdir(vcfdir):
         if 'vcf' not in outvcf or 'vep' in outvcf:
                 continue
