@@ -159,21 +159,30 @@ def getBamPath(synid,cmdfile=''):
     return bampath
 
 
-def compileVcfs(base,numFiles):
+def compileVcfs(base,numFiles,cmdfile=''):
     outfiles=''
     cmd='bcftools cat '+outfiles+' -o '+os.path.basename(base)
     print cmd
-
+    if cmdfile='':
+        os.system(cmd)
+    else:
+        cmdfile.write(cmdfile+'\n')
     return base
 
-def makeMaffFromVcf(vcffile):
+def makeMaffFromVcf(vcffile,cmdfile=''):
     cmd='perl ~/VarDictJava/VarDict/vcf2txt.pl'
     maffile=re.sub(".vcf",".maf",vcffile)
     cmd=cmd+' vcffile'
     print cmd
+    if cmdfile=='':
+        os.system(cmd+'>'+maffile)
+    else:
+        cmdfile.write(cmdfile+'>'+maffile+'\n')
+
     return maffile
 
 allpats=['1','2','3','4','5','6','8','9','11']
+allpats = ['1']
 for p in allpats:
     res=syn.tableQuery("SELECT DnaID,WGS FROM syn5556216 where Patient=%s"%(p))
     df=res.asDataFrame()
@@ -193,15 +202,27 @@ for p in allpats:
         if isinstance(tu,float):
             continue
       #run pileup command
-        cmdfile=open(tu+'_patient_upload_'+p+'_cmd.sh','w')
-        cmdfile.write('#/bin/bash\n')
+ #       cmdfile=open(tu+'_patient_upload_'+p+'_cmd.sh','w')
+ #       cmdfile.write('#/bin/bash\n')
+        cmdfile=''
 #        bf=updateBams(getBamPath(tu,cmdfile),cmdfile)
 #        outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
         normsamp='patient_%s_normal_%s'%(p,normind[0])
         tumsamp='patient_%s_tumor_%s'%(p,tu)
-        vcf = compileVcfs('/mnt/huge/dermalWgs/varDict/'+normsamp+'_'+tumsamp+'.snpeff.vcf','20')
-        maffile = makeMafFromVcf(vcf)
+
+        base='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/'
+        script=base+'2016-05-02/compileUploadVardictResults.py'
+
+        vcf = compileVcfs('/mnt/huge/dermalWgs/varDict/'+normsamp+'_'+tumsamp+'.snpeff.vcf','20',cmdfile=cmdfile)
+        sv_file = File(vcf,description='Tumor-normal VCF file',parentId='syn6022465')
+        sv_act = synapseclient.activity.Activity(name='Vardict and snpeff',
+                                                 description = 'Recalculated variants from bam bam files',
+                                                used=[normind[0],tu],executed=script)
 
 
+        maffile = makeMafFromVcf(vcf,cmdfile=cmdfile)
+        sm_file = File(maffile,description='Tumor-normal MAF file',parentId='syn6022474')
+        sm_act=synapseclient.activity.Activity(name='MAF from vardict and snpeff',used=[normind[0],tu,sv_file],executed=script)
+#        cmdfile.close()
         #	newvcf= runSnpEff(vcf,cmdfile)
-	cmdfile.close()
+#	cmdfile.close()
