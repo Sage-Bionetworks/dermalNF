@@ -105,7 +105,7 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
   ##goal is to filter all by effect, but only somatic/LOH by pvalue...
     allmafs<-synapseQuery("select * from entity where parentId=='syn6022474'")
   
-    allMuts<-sapply(allmafs$entity.id,function(x){
+    allMuts<-lapply(allmafs$entity.id,function(x){
         res<-synGet(x)
 #        tab<-as.data.frame(fread(gzfile(res@filePath),sep='\t'))
         tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
@@ -135,16 +135,14 @@ storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
   gfname<-paste(fname,'.gz')
   gzip(fname,gfname)
   ul<-lapply(names(mafs),function(x) list(entity=x))
-  synStore(File(gfname,parentId=''),used=ul,executed='')
+  synStore(File(gfname,parentId='syn5605256'),used=ul,executed='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')
   
 }
 #'getMutationStatsForGene obtains all mutations for a particular gene of interest across all patients
 #'@param gene is the gene symbol in question
 #'@param impact is a list of which mutations to include, defaults to all ('HIGH','MODERATE' and 'LOW')
 #'@param doPlot: if set to true, will plot some basic statistics about where and when this mutation occurs
-#'@param som.germ - the MAF file tables separated by whether or not the mutation is somatic or germline
-getMutationStatsForGene<-function(gene='NF1',doPlot=FALSE,redo=FALSE,impact=c('HIGH'),
-                                  pvalthresh=0.05,){
+getMutationStatsForGene<-function(gene='NF1',doPlot=FALSE,impact=c('HIGH')){
 
   ##first check to see if we have the file already on synapse
   if(gene%in%all.gene.muts$Hugo_Symbol && !redo){
