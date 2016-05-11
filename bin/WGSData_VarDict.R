@@ -23,32 +23,32 @@ require(pheatmap)
 
 #all.gene.muts<-read.table(synGet('syn5713423')@filePath,header=T,sep='\t')
 doPatientHeatmap<-function(mut.tab,title,fname,minSamples=1){
-  
+
   ##format into matrix
-  mut.counts=mut.tab%>% 
-    group_by(Hugo_Symbol,Sample_ID) %>% 
+  mut.counts=mut.tab%>%
+    group_by(Hugo_Symbol,Sample_ID) %>%
     summarize(Count=n()) %>%
     acast(Hugo_Symbol~Sample_ID,value.var='Count')
-  
+
   #get extra variables, like distinct variants
   num.variants=mut.tab%>%group_by(Hugo_Symbol)%>%summarize(Variants=n_distinct(Protein_Change))
   variants=num.variants$Variants
   names(variants)=num.variants$Hugo_Symbol
-  
+
   ##now filter by minCount
   mut.counts=mut.counts[which(apply(mut.counts,1,function(x) length(which(x>0)))>minSamples),]
-  
-  
-  
+
+
+
   #get row and column order
   r.o=order(apply(mut.counts,1,function(x) length(which(x>0))))
   c.o=order(apply(mut.counts,2,function(x) length(which(x>0))))
-  
+
   mut.counts=mut.counts[r.o,c.o]
-  
+
   pheatmap(log10(1+mut.counts),cellwidth=10,cellheight=10,cluster_rows=F,cluster_cols=F,
            main=title,filename=fname,annotation_row=data.frame(Variants=variants))
-             
+
 }
 
 #'Define function to plot gene mutations across patients in a heatmap
@@ -60,57 +60,60 @@ panPatientPlots<-function(mutTable=all.gene.muts,minSamples=2,notIncluded=c(),pr
   ##first remove genes
   if(length(notIncluded)>0){
     print(paste("Removing",length(which(mutTable$Mutation_Type%in%notIncluded)),'mutations that are',paste(notIncluded,collapse='or')))
-    mutTable=mutTable[-which(mutTable$Mutation_Type%in%notIncluded),]  
+    mutTable=mutTable[-which(mutTable$Mutation_Type%in%notIncluded),]
   }
-  
+
   #get somatic mutants, then plot
   som.muts=subset(mutTable,Mutation_Status=='Somatic')
   #now filter by minSamples value
   som.sample.count=som.muts%>%group_by(Hugo_Symbol)%>%summarize(Samples=n_distinct(Sample_ID))
   genes.to.plot=as.character(som.sample.count$Hugo_Symbol[which(som.sample.count$Samples>minSamples)])
   som.muts=som.muts[which(as.character(som.muts$Hugo_Symbol)%in%genes.to.plot),]
-  
+
   title=paste('Number of somatic mutations in\n genes',
               ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
               'that occur in at least',minSamples,'samples')
   fname=paste(prefix,'somaticMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
   doPatientHeatmap(som.muts,title,paste(fname,'png',sep='.'))
-  
+
   #then get germline
   g.muts=subset(mutTable,Mutation_Status=='Germline')
   title=paste('Number of somatic mutations in\n genes',
               ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
               'that occur in at least',minSamples,'samples')
   fname=paste(prefix,'somaticMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
- 
+
   g.sample.count=g.muts%>%group_by(Hugo_Symbol)%>%summarize(Samples=n_distinct(Sample_ID))
   genes.to.plot=as.character(g.sample.count$Hugo_Symbol[which(g.sample.count$Samples>minSamples)])
   g.muts=g.muts[which(as.character(g.muts$Hugo_Symbol)%in%genes.to.plot),]
-  
+
   title=paste('Number of germline mutations in\n genes',
               ifelse(length(notIncluded)>0,paste('(not',paste(notIncluded,collapse=','),')'),''),
               'that occur in at least',minSamples,'samples')
   fname=paste(prefix,'germlineMuts_not',paste(notIncluded,collapse='_'),'minSamples',minSamples,sep='_')
   doPatientHeatmap(g.muts,title,paste(fname,'png',sep='.'))
-  
+
 }
 
 
 #'divideMAFfiles
-#'Collects MAF files from synapse, separates them by vardict mutation status 
+#'Collects MAF files from synapse, separates them by vardict mutation status
 #'@param effect is list of allowable effects.
 #'@return list of list of tables
 divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh=0.05){
-  
+
   ##goal is to filter all by effect, but only somatic/LOH by pvalue...
     allmafs<-synapseQuery("select * from entity where parentId=='syn6022474'")
     require(R.utils)
     allMuts<-lapply(allmafs$entity.id,function(x){
         res<-synGet(x)@filePath
         base=basename(res)
-        file.copy(res,base)
-        f=gunzip(base)[1]
-        tab<-as.data.frame(fread(f,sep='\t'))
+        f=gsub('.gz','',base)
+        if(!file.exists(f)){
+            file.copy(res,base)
+            f=gunzip(base)[1]
+        }
+        tab<-fread(f,sep='\t',data.table=TRUE)
 #        tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
         etab<-subset(tab,Effect%in%effect)
         ttab<-subset(etab,`Paired-p_value`<pvalthresh)
@@ -139,7 +142,7 @@ storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
   gzip(fname,gfname)
   ul<-lapply(names(mafs),function(x) list(entity=x))
   synStore(File(gfname,parentId='syn5605256'),used=ul,executed='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')
-  
+
 }
 #'getMutationStatsForGene obtains all mutations for a particular gene of interest across all patients
 #'@param gene is the gene symbol in question
@@ -172,8 +175,8 @@ getMutationStatsForGene<-function(gene='NF1',doPlot=FALSE,impact=c('HIGH')){
         Reference_Allele=ref_al,Variant_Allele=var_al,
         Mutation_Type=classes,TumorDepth=t_depth,
         Position=pos,Tissue=tissue,Patient=pats)
-  
-    
+
+
     ##the mindf files are visible via cbioportal.
     mindf=unique(df[,-c(11,13,14)])
     write.table(mindf,file=paste(gene,paste(impact,collapse='_'),'mutations.tsv',sep=''),quote=FALSE,sep='\t',row.names=F)
@@ -201,7 +204,7 @@ getMutationStatsForGene<-function(gene='NF1',doPlot=FALSE,impact=c('HIGH')){
   }
   if(doPlot){
     require(ggplot2)
-    
+
     pdf(paste('numberOf',impact,'impact',gene,'MutationsPerPatient.pdf',sep=''))
     p<-ggplot(df)+geom_bar(aes(Sample_ID,fill=Mutation_Status),position='dodge')
     p<-p+ggtitle(paste('Number of',impact,'impact  mutations in',gene))
@@ -243,7 +246,7 @@ getMutationStatsForGene<-function(gene='NF1',doPlot=FALSE,impact=c('HIGH')){
     print(p)
     dev.off()
   }
-  
+
   return(df)
 }
 
@@ -252,7 +255,7 @@ heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10,samp.vars=NA){
   require(reshape2)
   require(dplyr)
   require(pheatmap)
-  
+
   ##first map df to phred
   mut.idx<-match(df$Start_Position,phredscore$Pos)
   na.vals<-which(is.na(mut.idx))
@@ -262,7 +265,7 @@ heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10,samp.vars=NA){
  df$PHRED<-phredscore$PHRED[mut.idx]
 # print(head(df))
   #df$Consequence<-nf1.deets$Consequence[mut.idx]
-  
+
   ##first start with matrix of phred scores
    ##then separate out by tumor type
   changes<-as.character(df$Protein_Change)
@@ -271,42 +274,42 @@ heatmapWithPhredScore<-function(df,fname,phredscore,cutoff=10,samp.vars=NA){
   rownames(ttypes)<-unique(changes)
  # print(head(ttypes))
 #  print(head(types))
-  
+
   pmat = acast(df,Sample_ID~Protein_Change,value.var='PHRED',fill=0)
   col.ords=order(apply(pmat,2,function(x) mean(x[which(x>0)])))
   pmat<-pmat[order(rowSums(pmat)),col.ords]
   col.cuts=which(apply(pmat,2,function(x) mean(x[which(x>0)])>cutoff))
-  
+
   soms=grep('tissue',rownames(pmat))
   #print(head(pmat))
-  
+
   pheatmap(pmat[soms,],annotation_col = ttypes,annotation_row=samp.vars,
            cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
          #  legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
            filename=paste('positionScoreSomatic',fname,sep=''))
-  
+
   pheatmap(pmat[-soms,],annotation_col = ttypes,annotation_row=samp.vars,
            cluster_rows=F,cluster_cols=F,
            cellheight=10,cellwidth=10,
          filename=paste('positionScoreGermline',fname,sep=''))
-  
+
   pheatmap(pmat[soms,col.cuts],annotation_col = ttypes,annotation_row=samp.vars,
            cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
            #  legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
            filename=paste('positionScoreOver',cutoff,'Somatic',fname,sep=''))
-  
+
   pheatmap(pmat[-soms,col.cuts],annotation_col = ttypes,annotation_row=samp.vars,
            cluster_rows=F,cluster_cols=F,
            cellheight=10,cellwidth=10,
            filename=paste('positionScoreOver',cutoff,'Germline',fname,sep=''))
-  
+
   fs=paste(c('positionScoreGermline','positionScoreSomatic',
              paste('positionScoreOver',cutoff,'Somatic',sep=''),
              paste('positionScoreOver',cutoff,'Germline',sep='')),fname,sep='')
 
   return(fs)
-  
-  
+
+
 }
 
 #'Create a heatmap of tumor depth for a single-gene data frame
@@ -317,7 +320,7 @@ heatmapFromMutDf<-function(df=getMutationStatsForGene(gene='NF1'),fname='NF1muta
   require(reshape2)
   require(dplyr)
   require(pheatmap)
-  
+
   ##first start with matrix of counts
   countmat=df %>% group_by(Sample_ID,Protein_Change) %>% summarize(Count=n()) %>% acast(Sample_ID~Protein_Change,value.var='Count',fill=0)
   mut_ann=sapply(colnames(countmat),function(x) as.character(df[match(x,as.character(df$Protein_Change)),'Mutation_Type']))
@@ -334,25 +337,25 @@ heatmapFromMutDf<-function(df=getMutationStatsForGene(gene='NF1'),fname='NF1muta
     try(pheatmap(countmat[-soms,],cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep='')))
   }else{
     try(pheatmap(countmat,cluster_rows=F,cluster_cols=F,cellheight=10,cellwidth=10,annotation_col=data.frame(MutationClass=mut_ann),filename=paste('positionGermlineCount',fname,sep='')))
-  
+
   }
-  
+
   ##then separate out by tumor type
   types=unique(df$Mutation_Type)
   type.nums=seq(1,length(types))
   tdf=data.frame(TumorType=types,Numeric=type.nums)
   df$Numeric_Mut=tdf$Numeric[match(df$Mutation_Type,tdf$TumorType)]
-  
+
   typemat= acast(df,Sample_ID~Protein_Change,value.var='Numeric_Mut',fill=0)
   typemat<-typemat[order(rowSums(typemat)),order(apply(typemat,2,function(x) mean(x[which(x>0)])))]
   soms=grep('tissue',rownames(typemat))
   if(length(soms)>0){
-    
+
   pheatmap(typemat[soms,],color = c('white',rainbow(length(types))),
            cellheight=10,cellwidth=10,cluster_rows=F,cluster_cols=F,
            legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,
            filename=paste('positionTypeSomatic',fname,sep=''))
-  
+
   pheatmap(typemat[-soms,],color = c('white',rainbow(length(types))),
            cluster_rows=F,cluster_cols=F,
            cellheight=10,cellwidth=10,
@@ -362,10 +365,8 @@ heatmapFromMutDf<-function(df=getMutationStatsForGene(gene='NF1'),fname='NF1muta
              cluster_rows=F,cluster_cols=F,
              cellheight=10,cellwidth=10,
              legend_labels=as.character(types),legend_breaks=c(type.nums)-0.5,filename=paste('positionTypeGermline',fname,sep='')))
-    
+
   }
-    
+
 
 }
-
-
