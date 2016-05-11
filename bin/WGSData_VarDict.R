@@ -104,10 +104,13 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
   
   ##goal is to filter all by effect, but only somatic/LOH by pvalue...
     allmafs<-synapseQuery("select * from entity where parentId=='syn6022474'")
-  
+    require(R.utils)
     allMuts<-lapply(allmafs$entity.id,function(x){
-        res<-synGet(x)
-        tab<-read.table(gzfile(res@filePath),sep='\t')
+        res<-synGet(x)@filePath
+        base=basename(res)
+        file.copy(res,base)
+        f=gunzip(base)[1]
+        tab<-as.data.frame(fread(f,sep='\t'))
 #        tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
         etab<-subset(tab,Effect%in%effect)
         ttab<-subset(etab,`Paired-p_value`<pvalthresh)
