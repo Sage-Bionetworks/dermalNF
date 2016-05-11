@@ -107,8 +107,8 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
   
     allMuts<-lapply(allmafs$entity.id,function(x){
         res<-synGet(x)
-#        tab<-as.data.frame(fread(gzfile(res@filePath),sep='\t'))
-        tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
+        tab<-read.table(gzfile(res@filePath),sep='\t')
+#        tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
         etab<-subset(tab,Effect%in%effect)
         ttab<-subset(etab,`Paired-p_value`<pvalthresh)
         germ<-unique(subset(etab,Status=='Germline'))
