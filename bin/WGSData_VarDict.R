@@ -134,14 +134,16 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
 
 
 storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
-  mafs=divideMAFfiles(impact,pvalthresh=pvalthresh)
-  all.mafs<-do.call('rbind',lapply(mafs,function(x) do.call('rbind',x)))
+    mafs=divideMAFfiles(impact,pvalthresh=pvalthresh)
+    synids<-lapply(mafs,function(x) x$synId)
+    all.mafs<-do.call('rbind',lapply(allMuts,function(x) rbind(x$Germline,x$Somatic,x$LOH)))
   fname=paste('varDictMutations_AllGenesAllSamples_pval0.05_impact',paste(impact,collapse='_'),'.tsv',sep='')
   write.table(all.mafs,file=fname)
-  gfname<-paste(fname,'.gz')
-  gzip(fname,gfname)
-  ul<-lapply(names(mafs),function(x) list(entity=x))
-  synStore(File(gfname,parentId='syn5605256'),used=ul,executed='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')
+  #gfname<-paste(fname,'.gz')
+                                        #gzip(fname,gfname)
+      ul<-lapply(as.character(synids),function(x) list(entity=x))
+#  ul<-lapply(synids,function(x) list(entity=x))
+  synStore(File(fname,parentId='syn5605256'),used=ul,executed='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')
 
 }
 #'getMutationStatsForGene obtains all mutations for a particular gene of interest across all patients
