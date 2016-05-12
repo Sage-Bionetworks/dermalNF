@@ -138,7 +138,7 @@ storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
     synids<-lapply(mafs,function(x) x$synId)
     all.mafs<-do.call('rbind',lapply(allMuts,function(x) rbind(x$Germline,x$Somatic,x$LOH)))
   fname=paste('varDictMutations_AllGenesAllSamples_pval0.05_impact',paste(impact,collapse='_'),'.tsv',sep='')
-  write.table(all.mafs,file=fname)
+  write.table(all.mafs,file=fname, sep='\t',row.names=F,quote=F,col.names=T)
   #gfname<-paste(fname,'.gz')
                                         #gzip(fname,gfname)
       ul<-lapply(as.character(synids),function(x) list(entity=x))
