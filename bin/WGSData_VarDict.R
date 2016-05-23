@@ -124,7 +124,7 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
         loh<-unique(subset(ttab,Status=='StrongLOH'))
         del<-unique(subset(etab,Status=='Deletion'))
         print(paste("Returning tables with",nrow(germ),'germline events,',nrow(ss)+nrow(ls),'somatic events',nrow(loh)+nrow(lloh),'loh events and',nrow(del),'deletion events'))
-        return(list(Germline=germ,LOH=rbind(lloh,loh),Somatic=rbind(ls,ss),synId=x))
+        return(list(Germline=germ,LOH=rbind(lloh,loh),Somatic=rbind(ls,ss),Deletion=del,synId=x))
     })
     ids<-sapply(allmafs$entity.name,function(x) unlist(strsplit(x,split='.',fixed=TRUE))[1])
     names(allMuts)<-ids
@@ -136,9 +136,9 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
 storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
     mafs=divideMAFfiles(impact,pvalthresh=pvalthresh)
     synids<-lapply(mafs,function(x) x$synId)
-    all.mafs<-do.call('rbind',lapply(allMuts,function(x) rbind(x$Germline,x$Somatic,x$LOH)))
-  fname=paste('varDictMutations_AllGenesAllSamples_pval0.05_impact',paste(impact,collapse='_'),'.tsv',sep='')
-  write.table(all.mafs,file=fname)
+    all.mafs<-do.call('rbind',lapply(mafs,function(x) rbind(x$Germline,x$Somatic,x$LOH,x$Deletion)))
+  fname=paste('varDictMutations_AllGenesAllSamples_pval',pvalthresh,'_impact',paste(impact,collapse='_'),'.tsv',sep='')
+  write.table(all.mafs,file=fname, sep='\t',row.names=F,quote=F,col.names=T)
   #gfname<-paste(fname,'.gz')
                                         #gzip(fname,gfname)
       ul<-lapply(as.character(synids),function(x) list(entity=x))
