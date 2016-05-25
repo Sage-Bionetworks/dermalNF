@@ -113,7 +113,7 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
             file.copy(res,base)
             f=gunzip(base)[1]
         }
-        tab<-fread(f,sep='\t',data.table=TRUE)
+        tab<-fread(f,sep='\t')
 #        tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
         etab<-subset(tab,Effect%in%effect)
         ttab<-subset(etab,`Paired-p_value`<pvalthresh)
