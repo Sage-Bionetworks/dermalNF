@@ -109,10 +109,10 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
         res<-synGet(x)@filePath
         base=basename(res)
         f=gsub('.gz','',base)
-       # if(!file.exists(f)){
-      #      file.copy(res,base)
-      #      f=gunzip(base)[1]
-      #  }
+       if(!file.exists(f)){
+        file.copy(res,base)
+        f=gunzip(base)[1]
+        }
         tab<-fread(f,sep='\t',data.table=TRUE)
 #        tab<-as.data.frame(fread(input=paste('zcat < ',res@filePath)))
         etab<-subset(tab,Effect%in%effect)

@@ -1,5 +1,5 @@
 ###create updated list
-source("../../dermalNF/bin/WGSData_VarDict.R")
+source("../../bin/WGSData_VarDict.R")
 
-res<-divideMAFFiles()
-res.high<-divideMAFFiles(effect=c("HIGH"))
+res<-storeMutsForAllGenes(effect=c('HIGH','MODERATE','LOW')  #)divideMAFfiles()
+res.high<-storeMutsForAllGenes(effect=c("HIGH"))
