@@ -6,5 +6,5 @@
 source("../../bin/WGSData_VarDict.R")
 storeMutsForAllGenes(impact=c("HIGH","MODERATE","LOW"),0.05)
 storeMutsForAllGenes(impact=c("HIGH","MODERATE","LOW"),0.1)
-storeMutsForAllGenes(impact=c("HIGH"),0.05)
-storeMutsForAllGenes(impact=c("MODERATE"),0.05)
+#storeMutsForAllGenes(impact=c("HIGH"),0.05)
+#storeMutsForAllGenes(impact=c("MODERATE"),0.05)
