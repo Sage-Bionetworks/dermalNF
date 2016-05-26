@@ -24,7 +24,7 @@ impact=c("LOW",'MODERATE','HIGH')
 #<<<<<<< HEAD
 #allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS',redo=TRUE)),mc.cores=8)
 #=======
-allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter=c('PASS'))),mc.cores=8)
+allstats<-mclapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter=c('PASS'),redo=TRUE)),mc.cores=8)
 #>>>>>>> 3db7d3028bddad44e92c87be77ac24d9cd79ccc9
 #allstats<-lapply(as.character(all.genes),function(x) try(getMutationStatsForGene(gene=x,doPlot=FALSE,som.germ=som.germ,filter='PASS')))
 names(allstats)<-as.character(all.genes)
