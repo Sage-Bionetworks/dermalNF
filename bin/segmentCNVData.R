@@ -1,5 +1,5 @@
 ###
-### DermalNF CVN analysis
+### DermalNF CNV analysis
 ### Goal of this script is to collect the CNV data from the OMNI SNP platform and determine
 ### 1- that the data is sound, the log ratios are distributed as expected
 ### 2- if there is loss in the NF1 region
@@ -45,6 +45,8 @@ in.region<-rep(FALSE,nrow(lrr))
 in.region[which(annot$chrpos%in%chr17.snps$chrpos)]<-TRUE
 
 
+plot=FALSE
+if(plot){
 #how can we plot baf only?
 library(ggplot2)
 ##create ggplot-associated data.frame
@@ -111,42 +113,79 @@ m<-m + geom_density() + xlim(-.1,1.1)
 print(m)
 
 dev.off()
-
-#take most informative plot, do for each patient...
+}
 
 #####NOW DO the segmentation
 
 cna <- CNA(lrr[is.autosome,], as.character(all.chr)[is.autosome], all.pos[is.autosome], data.type="logratio",names(sample.data))
+
+#BAF specific functions from: http://bioinformatics.mdanderson.org/CLL-SNP/docs/04-BAF-segments.pdf
+expit <- function(a) exp(a)/(1 + exp(a))
+logit <- function(p) log(p/(1 - p))
+bacd <- function(w) (1 + sqrt(1 - 2^(-w)))/2
+ford <- function(y) log2(1/(4 * y * (1 - y)))
+
+x<-logit(baf)
+x[which(abs(x) > 3.5,arr.ind=T)] <- NA
+y <- expit(x)
+yy <- ford(y)
+
+cna.baf<-CNA(yy[is.autosome,], as.character(all.chr)[is.autosome], all.pos[is.autosome], data.type="logratio",names(sample.data))
+
 rm(annot)
 
 smoothed.cna <- smooth.CNA(cna)
 segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
 
+smoothed.baf<-smooth.CNA(cna.baf)
+segmented.smoothed.baf<-segment(smoothed.baf,verbose=1)
 
 chr17.smoothed=subset(segment.smoothed.cna,chromlist=c("17"))
 pdf('chr17.seg.smoothed.pdf')
 plot(chr17.smoothed, plot.type="s")
 dev.off()
 
-
+chr17.smoothed.baf=subset(segment.smoothed.baf,chromlist=c("17"))
+pdf('chr17.seg.smoothed.baf.pdf')
+plot(chr17.smoothed.baf, plot.type="s")
+dev.off()
 
 segment.smoothed.cna.sundo <- segment(smoothed.cna, undo.splits="sdundo",undo.SD=2,verbose=1)
 chr17.smoothed.sundo=subset(segment.smoothed.cna.sundo,chromlist=c("17"))
+
 
 pdf('chr17.seg.smoothed.sundo.pdf')
 plot(chr17.smoothed.sundo, plot.type="s")
 dev.off()
 
+segment.smoothed.baf.sundo <- segment(smoothed.baf, undo.splits="sdundo",undo.SD=2,verbose=1)
+chr17.smoothed.baf.sundo=subset(segment.smoothed.baf.sundo,chromlist=c("17"))
+
+
+pdf('chr17.seg.smoothed.baf.sundo.pdf')
+plot(chr17.smoothed.baf.sundo, plot.type="s")
+dev.off()
+
 sf=File('chr17.seg.smoothed.sundo.pdf',parentId='syn5049702')
 synStore(sf,used=list(list(name='segmentCNVData.R',
-                url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
                 list(name='dermalNFData.R',
-                     url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                     url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
                 list(entity='syn5005069',wasExecuted=FALSE)))
 
+sf=File('chr17.seg.smoothed.baf.sundo.pdf',parentId='syn5049702')
+synStore(sf,used=list(list(name='segmentCNVData.R',
+                           url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                      list(name='dermalNFData.R',
+                           url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                      list(entity='syn5005069',wasExecuted=FALSE)))
 
 ##now get the region around chr17 to get region of interest, then re-plot b-allele frequency and logR
 
+write.table(segment.smoothed.baf$output, file="dermal_nf_cbs_baf_noundo.seg",
+            sep="\t",quote=FALSE,row.names=F)
+write.table(segment.smoothed.baf.sundo$output, file="dermal_nf_cbs_baf_undosd2.seg",
+            sep="\t",quote=FALSE,row.names=F)
 
 write.table(segment.smoothed.cna$output, file="dermal_nf_cbs_noundo.seg",
             sep="\t",quote=FALSE,row.names=F)
@@ -158,17 +197,33 @@ write.table(segment.smoothed.cna.sundo$output, file="dermal_nf_cbs_undosd2.seg",
 
 sf=File('dermal_nf_cbs_undosd2.seg',parentId='syn5049702')
 synStore(sf,used=list(list(name='segmentCNVData.R',
-                url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
                 list(name='dermalNFData.R',
-                     url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                     url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
                 list(entity='syn5005069',wasExecuted=FALSE)),
-         activityName='Segmentation analysis of copy number alterations')
+         activityName='Segmentation analysis of LogR copy number alterations')
 
 sf=File('dermal_nf_cbs_noundo.seg',parentId='syn5049702')
 synStore(sf,used=list(list(name='segmentCNVData.R',
-                url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
                 list(name='dermalNFData.R',
-                     url='https://raw.githubusercontent.com/sgosline/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                     url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
                 list(entity='syn5005069',wasExecuted=FALSE)),
-         activityName='Segmentation analysis of copy number alterations')
+         activityName='Segmentation analysis of LogR of copy number alterations')
+
+sf=File('dermal_nf_cbs_baf_undosd2.seg',parentId='syn5049702')
+synStore(sf,used=list(list(name='segmentCNVData.R',
+                           url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                      list(name='dermalNFData.R',
+                           url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                      list(entity='syn5005069',wasExecuted=FALSE)),
+         activityName='Segmentation analysis of BAF copy number alterations')
+
+sf=File('dermal_nf_cbs_baf_noundo.seg',parentId='syn5049702')
+synStore(sf,used=list(list(name='segmentCNVData.R',
+                           url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/segmentCNVData.R',wasExecuted=TRUE),
+                      list(name='dermalNFData.R',
+                           url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/dermalNFData.R',wasExecuted=TRUE),
+                      list(entity='syn5005069',wasExecuted=FALSE)),
+         activityName='Segmentation analysis of BAF copy number alterations')
 
