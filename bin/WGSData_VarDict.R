@@ -122,7 +122,7 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
         ls<-unique(subset(ttab,Status=='LikelySomatic'))
         lloh<-unique(subset(ttab,Status=='LikelyLOH'))
         loh<-unique(subset(ttab,Status=='StrongLOH'))
-        del<-unique(subset(etab,Status=='Deletion'))
+        del<-unique(subset(ttab,Status=='Deletion'))
         print(paste("Returning tables with",nrow(germ),'germline events,',nrow(ss)+nrow(ls),'somatic events',nrow(loh)+nrow(lloh),'loh events and',nrow(del),'deletion events'))
         return(list(Germline=germ,LOH=rbind(lloh,loh),Somatic=rbind(ls,ss),Deletion=del,synId=x))
     })

@@ -138,7 +138,7 @@ smoothed.cna <- smooth.CNA(cna)
 segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
 
 smoothed.baf<-smooth.CNA(cna.baf)
-segmented.smoothed.baf<-segment(smoothed.baf,verbose=1)
+segment.smoothed.baf<-segment(smoothed.baf,verbose=1)
 
 chr17.smoothed=subset(segment.smoothed.cna,chromlist=c("17"))
 pdf('chr17.seg.smoothed.pdf')
