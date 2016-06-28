@@ -13,6 +13,17 @@ syn.login()
 stcommand='samtools mpileup -f ../../../lib/ucsc.hg19.fasta '
 vscommand='java -r ~/VarScan.v2.3.9.jar pileup2snp'
 
+
+def runSnpEff(vcf,cmdfile=''):
+    cmd='java -jar /home/ubuntu/snpEff/snpEff.jar hg19 %s'%(vcf)
+    newvcf=re.sub('vcf','snpeff.vcf',vcf)
+    if cmdfile=='':
+        os.system(cmd+'>'+newvcf)
+    else:
+        cmdfile.write(cmd+'>'+newvcf+'\n')
+    return newvcf
+
+
 def runMutect(normfile,tumfile,out_prefix,cmdfile=''):
     reference='~/dermalNF/lib/ucsc.hg19.fasta'
     cosmic='~/dermalNF/lib/sorted_b37_cosmic_v54_120711_withchr.vcf'
@@ -25,21 +36,17 @@ def runMutect(normfile,tumfile,out_prefix,cmdfile=''):
         cmdfile.write('sudo apt-get -f install oracle-java7-set-default\n')
  #   for iv in intervals:
     iv='chr17'
-    cmd='java -jar ~/GenomeAnalysisTK.jar --analysis_type MuTect2 --reference_sequence %s --input_file:normal %s --input_file:tumor %s --out %s -L %s'%(reference,normfile,tumfile,out_prefix+'_'+iv+'.vcf',iv)
+    vcffile=out_prefix+'_'+iv+'.vcf'
+    cmd='java -jar ~/GenomeAnalysisTK.jar --analysis_type MuTect2 --reference_sequence %s --input_file:normal %s --input_file:tumor %s --out %s -L %s'%(reference,normfile,tumfile,vcffile,iv)
 
     pstr='Running muTectv2 on %s and %s on region %s'%(normfile,tumfile,iv)
-    if cmdfile=='':
-        print pstr
-      	os.system(cmd)
-    else:
-    	cmdfile.write('echo "'+pstr+'"\n'+cmd+'\n')
-
-    #allfiles=out_prefix+'_chr*.vcf'
-    #if cmdfile=='':
-    #    os.system('cat '+allfiles+'>'+out_prefix+'.vcf')
-    #    os.system('rm '+allfiles)
-    #else:
-    #    cmdfile.write('cat '+allfiles+'>'+out_prefix+'.vcf\nrm '+allfiles)
+    if not os.path.exists(vcffile):
+        if cmdfile=='':
+            print pstr
+            os.system(cmd)
+        else:
+            cmdfile.write('echo "'+pstr+'"\n'+cmd+'\n')
+    return vcffile
 
 
 def updateBams(bamfile,cmdfile=''):
@@ -128,4 +135,7 @@ for p in allpats:
         outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
     #    print outfile
         cmd = runMutect(normfile,bf,outfile,cmdfile)
+        newvcf = runSnpEff(cmd,cmdfile)
+
+
 	cmdfile.close()
