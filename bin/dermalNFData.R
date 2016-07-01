@@ -73,7 +73,13 @@ cnv_unprocessed_files<-function(){
 
 
 ##this processes gets the ASCAT segmented data
-ascat_segments<-function(annot=NA,byval='gene',metric='median'){
+ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
+  require(DNAcopy)
+  require(CNTools)
+  if(!recalc){
+      return(list(LRR=lrr.segM,BAF=baf.segM))
+  }
+  
   if(is.na(annot))
     annot=snp_annotation_data()
   
@@ -123,19 +129,17 @@ ascat_segments<-function(annot=NA,byval='gene',metric='median'){
   ##use CN Tools to agglomerate the data, though maybe not segment it?
   ##START WITH LRR
   matched.annot<-auto.annot[which(auto.annot$Name%in%rownames(lrr)),]
-  cna <- CNSeg(lrr,matched.annot$Chr, matched.annot$Map,lrr.samps)
+
+  cna <- CNA(lrr,matched.annot$Chr, matched.annot$Map,data.type='logratio',lrr.pats)
   smoothed.cna <- smooth.CNA(cna)
   segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
-  cs<-CNSeg(segment.smoothed.cna$output)
-  
-  
+  lrr.seg<-segment.smoothed.cna$output
+  cs<-CNSeg(lrr.seg)
   
   rdseg <- getRS(cs, by = byval,geneMap=geneInfo, imput = FALSE, XY = FALSE, what =metric)
   
   lrr.segM <- rs(rdseg)
   
- 
-
   ##doanload all BAF files, read in
   baf <- do.call("cbind", lapply(baf.files, function(x){
    tab<- read.table(paste('output_aspcf/all/',x,sep=''))
@@ -153,23 +157,21 @@ ascat_segments<-function(annot=NA,byval='gene',metric='median'){
     return(paste('Patient',pat,'DNASample',samp,sep='_'))
   })
   
-
   colnames(baf)<-baf.pats
   ##use CN Tools to agglomerate the data, though maybe not segment it?
   ##START WITH LRR
   matched.annot<-auto.annot[which(auto.annot$Name%in%rownames(baf)),]
-  cna <- CNSeg(baf,matched.annot$Chr, matched.annot$Map,baf.samps)
+  cna <- CNA(baf,matched.annot$Chr, matched.annot$Map,data.type='logratio',baf.pats)
   smoothed.cna <- smooth.CNA(cna)
   segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
-  cs<-CNSeg(segment.smoothed.cna$output)
-  
-  
+  baf.seg<-segment.smoothed.cna$output
+  cs<-CNSeg(baf.seg)
   
   rdseg <- getRS(cs, by = byval,geneMap=geneInfo, imput = FALSE, XY = FALSE, what =metric)
   
   baf.segM <- rs(rdseg)
   
-  return(list(LRR=lrr.segM,BAF=baf.segM))
+  return(list(LRR=lrr.segM,BAF=baf.segM,LRR.seg=lrr.seg,BAF.seg=baf.seg))
 }
 #this function gets the original files from the OMNI arrays
 cnv_unprocessed<-function(annot=NA){
