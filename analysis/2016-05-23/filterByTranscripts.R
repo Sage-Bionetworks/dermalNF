@@ -1,4 +1,4 @@
-source("../../dermalNF/bin/WGSData_VarDict.R")
+source("../../bin/WGSData_VarDict.R")
 
 
 for(syn in c('syn6047991','syn6087182')){
@@ -50,6 +50,7 @@ for(syn in c('syn6047991','syn6087182')){
   fname=gsub('.tsv','_filteredForExpr.tsv',basename(synGet(syn)@filePath))
   write.table(expr.gene.muts,file=fname,sep='\t',quote=F)
   
-  synStore(File(fname,parentId='syn5605256'),executed=list(list(url='https://raw.githubusercontent.com/sgosline/dNFLandscape/master/analysis/2016-05-17/filterByTranscripts.R')),used=list(list(entity='syn6047991')))
+  fu='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/2016-05-23/filterByTranscripts.R'
+  synStore(File(fname,parentId='syn5605256'),executed=list(list(url=fu)),used=list(list(entity='syn6047991')))
 }
 

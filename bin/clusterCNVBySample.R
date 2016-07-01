@@ -14,6 +14,9 @@ source("../../bin/dermalNFData.R")
 if(!exists("segdata2"))
     segdata2 <- cnv_segmented(TRUE)
 
+#if(!exists("ascatData"))
+#  ascatData<-ascatSegments()
+
 #rename these
 names(patients)<-cnv.dat$synapseID
 names(tissueType)<-cnv.dat$synapseID

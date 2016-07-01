@@ -70,6 +70,109 @@ cnv_unprocessed_files<-function(){
     return(sample.data)
 }
 
+
+
+##this processes gets the ASCAT segmented data
+ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
+  require(DNAcopy)
+  require(CNTools)
+  if(!recalc){
+      return(list(LRR=lrr.segM,BAF=baf.segM))
+  }
+  
+  if(is.na(annot))
+    annot=snp_annotation_data()
+  
+  
+  f=synGet("syn6182422")@filePath
+  unzip(f)
+  
+  allfiles=list.files('./output_aspcf/all')
+  
+  ##now we have to do some file name munging to get patient data
+  
+  ##then merge all files together
+  is.autosome <- as.character(annot$Chr) %in% as.character(1:22)
+  auto.annot<-annot[is.autosome,]
+
+  #map lrr and bafs for each
+  lrr.files<-allfiles[grep("LogR",allfiles)]
+  lrr.samps<-sapply(lrr.files,function(x) unlist(strsplit(x,split='.',fixed=T))[1])
+
+  
+  baf.files<-allfiles[grep('BAF',allfiles)]
+  baf.samps<-sapply(baf.files,function(x) unlist(strsplit(x,split='.',fixed=T))[1])
+  
+  ##now collect mapping info to get patient/sample numbers...
+  mapping<-read.table(synGet('syn4999547')@filePath,header=T,sep='\t')
+  if(!exists("geneInfo"))
+    geneInfo<-read.table('../../data/hg19_geneInfo.txt')
+  
+  
+  ##download all lrr files, read in
+  lrr <- do.call("cbind", lapply(lrr.files, function(x) {
+    tab<-read.table(paste('output_aspcf/all/',x,sep=''))
+    idx<-match(auto.annot$Name,tab[,1])
+    na.idx<-idx[which(!is.na(idx))]
+    t2<-tab[na.idx,2]
+    names(t2)<-auto.annot$Name[which(!is.na(idx))]
+    return(t2)}))
+ 
+  lrr.pats<-sapply(as.character(mapping$Patient.ID[match(lrr.samps,mapping$Sample.ID)]),function(x){
+    ps<-unlist(strsplit(x,split=' '))
+    pat<-gsub('CT0+','',ps[1])
+    samp<-gsub('0+','',ps[2])
+    return(paste('Patient',pat,'DNASample',samp,sep='_'))
+  })
+  
+  colnames(lrr)<-lrr.pats
+  ##use CN Tools to agglomerate the data, though maybe not segment it?
+  ##START WITH LRR
+  matched.annot<-auto.annot[which(auto.annot$Name%in%rownames(lrr)),]
+
+  cna <- CNA(lrr,matched.annot$Chr, matched.annot$Map,data.type='logratio',lrr.pats)
+  smoothed.cna <- smooth.CNA(cna)
+  segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
+  lrr.seg<-segment.smoothed.cna$output
+  cs<-CNSeg(lrr.seg)
+  
+  rdseg <- getRS(cs, by = byval,geneMap=geneInfo, imput = FALSE, XY = FALSE, what =metric)
+  
+  lrr.segM <- rs(rdseg)
+  
+  ##doanload all BAF files, read in
+  baf <- do.call("cbind", lapply(baf.files, function(x){
+   tab<- read.table(paste('output_aspcf/all/',x,sep=''))
+   idx<-match(auto.annot$Name,tab[,1])
+   na.idx<-idx[which(!is.na(idx))]
+   t2<-tab[na.idx,2]
+   names(t2)<-auto.annot$Name[which(!is.na(idx))]
+   return(t2)}))
+
+  
+  baf.pats<-sapply(as.character(mapping$Patient.ID[match(baf.samps,mapping$Sample.ID)]),function(x){
+    ps<-unlist(strsplit(x,split=' '))
+    pat<-gsub('CT0+','',ps[1])
+    samp<-gsub('0+','',ps[2])
+    return(paste('Patient',pat,'DNASample',samp,sep='_'))
+  })
+  
+  colnames(baf)<-baf.pats
+  ##use CN Tools to agglomerate the data, though maybe not segment it?
+  ##START WITH LRR
+  matched.annot<-auto.annot[which(auto.annot$Name%in%rownames(baf)),]
+  cna <- CNA(baf,matched.annot$Chr, matched.annot$Map,data.type='logratio',baf.pats)
+  smoothed.cna <- smooth.CNA(cna)
+  segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
+  baf.seg<-segment.smoothed.cna$output
+  cs<-CNSeg(baf.seg)
+  
+  rdseg <- getRS(cs, by = byval,geneMap=geneInfo, imput = FALSE, XY = FALSE, what =metric)
+  
+  baf.segM <- rs(rdseg)
+  
+  return(list(LRR=lrr.segM,BAF=baf.segM,LRR.seg=lrr.seg,BAF.seg=baf.seg))
+}
 #this function gets the original files from the OMNI arrays
 cnv_unprocessed<-function(annot=NA){
     if(is.na(annot))

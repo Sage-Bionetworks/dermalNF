@@ -73,17 +73,6 @@ for(i in names(sample.data)){
 df<-data.frame(list.of.lists)
 #chr17.df<-data.frame(chr17.lists)
 
-#now plot the data
-## pdf('dermalNF_cnv_plots.pdf')
-## m<-ggplot(df,aes(x=LogRatio,colour=SampleType,linetype=NF1Region))
-## m<-m + geom_density() + xlim(-2.5,2)
-## print(m)
-
-## m<-ggplot(df,aes(x=BAlleleFreq,colour=SampleType,linetype=NF1Region))
-## m<-m + geom_density() + xlim(-.1,1.1)
-## print(m)
-
-## dev.off()
 
 
 #### TUMOR vs BLOOD in chr17 region
