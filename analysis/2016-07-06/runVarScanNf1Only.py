@@ -10,7 +10,7 @@ import synapseclient
 syn = synapseclient.Synapse()
 syn.login()
 
-stcommand='samtools mpileup -f ../../../lib/ucsc.hg19.fasta -l ./UCSC_hg19_knwonGene_2015_11_14_chr17.bed'
+stcommand='samtools mpileup -f ~/dermalNF/lib/ucsc.hg19.fasta -l ./UCSC_hg19_knwonGene_2015_11_14_chr17.bed '
 vscommand='java -r ~/VarScan.v2.3.9.jar pileup2snp'
 
 
@@ -100,13 +100,13 @@ def getBamPath(synid,cmdfile=''):
     ordered=re.sub('.bam','_ordered.bam',outfile)
     if not os.path.exists(bamf) and not os.path.exists(outfile) and not os.path.exists(ordered):
 	if cmdfile=='':
-        os.system(awscmd)
+	    os.system(awscmd)
 	else:
 	    cmdfile.write('echo "Getting %s from AWS"\n%s\n'%(bamf,awscmd))
 
     return bamf
 
-allpats=['1','2','3','4','5','6','8','9','11','12','13']
+allpats=['1','2','3','4','5','6','8','9','11']
 for p in allpats:
     res=syn.tableQuery("SELECT DnaID,WGS FROM syn5556216 where Patient=%s"%(p))
     df=res.asDataFrame()
@@ -114,10 +114,11 @@ for p in allpats:
     if len(normind)==0:
         print 'No normal file found for patient '+p
         next
-    normfile=updateBams(getBamPath(tu,cmdfile),cmdfile)
+    cmdfile=''
+    normfile=updateBams(getBamPath(normind[0],cmdfile),cmdfile)
 
     tuminds=[df['WGS'][ind] for ind,a in enumerate(df['DnaID']) if (a!='PBMC' and not math.isnan(float(a)))]
-    for tu in tums:
+    for tu in tuminds:
         #run pileup command
         if isinstance(tu,float):
             continue
