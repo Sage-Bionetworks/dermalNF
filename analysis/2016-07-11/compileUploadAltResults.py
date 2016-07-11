@@ -179,7 +179,7 @@ def compileVcfs(base,numFiles,cmdfile=''):
 
 def applyVcfFilter(vcf,cmdfile=''):
     ofile=re.sub('vcf','filtered.vcf',vcf)
-    cmd='bcftools index -t '+vcf+'\nbcftools view '+vcf+' -o '+ofile+' -f.,PASS -Oz'
+    cmd='bgzip '+vcf+'\bcftools index -t '+vcf+'.gz\nbcftools view '+vcf+'.gz -o '+ofile+' -f.,PASS -Oz'
     print cmd
     os.system(cmd)
     return ofile
