@@ -179,10 +179,10 @@ def compileVcfs(base,numFiles,cmdfile=''):
 
 def applyVcfFilter(vcf,cmdfile=''):
     ofile=re.sub('vcf','filtered.vcf',vcf)
-    cmd='bgzip '+vcf+'\bcftools index -t '+vcf+'.gz\nbcftools view '+vcf+'.gz -o '+ofile+' -f.,PASS -Oz'
+    cmd='bgzip '+vcf+'\nbcftools index -t '+vcf+'.gz\nbcftools view '+vcf+'.gz -o '+ofile+'.gz -f.,PASS -Oz'
     print cmd
     os.system(cmd)
-    return ofile
+    return ofile+'.gz'
 
 def makeMafFromVcf(vcffile,cmdfile=''):
     cmd='perl ~/VarDictJava/VarDict/vcf2txt.pl'
