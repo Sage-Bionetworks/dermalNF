@@ -223,17 +223,17 @@ for p in allpats:
         cmdfile=''
 #        bf=updateBams(getBamPath(tu,cmdfile),cmdfile)
 #        outfile='patient_%s_tumor_%s_vs_normal_%s.snp'%(p,tu,normind[0])
-	if tu not in ["syn4985400","syn4985585","syn4984995","syn4985566","syn4985454","syn4985458","syn4984997"]:
-	    print tu+' not in selected list, cmoving on'
-	    continue
-        normsamp='normal_%s'%(p,normind[0])
+	#if tu not in ["syn4985400","syn4985585","syn4984995","syn4985566","syn4985454","syn4985458","syn4984997"]:
+	 #   print tu+' not in selected list, cmoving on'
+	 #   continue
+        normsamp='normal_%s'%(normind[0])
         tumsamp='patient_%s_tumor_%s'%(p,tu)
 
         base='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/analysis/'
         script=base+'2016-07-11/compileUploadAltResults.py'
 
-       svcf = compileVcfs('/mnt/huge/dermalWgs/varScan/'+tumsamp+'_vs_'+normsamp+'_VarSCan_Somatic.snp.snpeff.vcf',20,cmdfile=cmdfile)
-        ivcf = compileVcfs('/mnt/huge/dermalWgs/varScan/'+tumsamp+'_vs_'+normsamp+'_VarSCan_Somatic.indel.snpeff.vcf',20,cmdfile=cmdfile)
+       	svcf ='/mnt/huge/dermalWgs/varScan/'+tumsamp+'_vs_'+normsamp+'_VarScan_somatic.snp.snpeff.vcf'
+        ivcf = '/mnt/huge/dermalWgs/varScan/'+tumsamp+'_vs_'+normsamp+'_VarScan_somatic.indel.snpeff.vcf'
 
 
     for vcf in [svcf, ivcf]:
