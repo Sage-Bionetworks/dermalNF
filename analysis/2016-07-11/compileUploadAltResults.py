@@ -186,13 +186,16 @@ def applyVcfFilter(vcf,cmdfile=''):
 
 def makeMafFromVcf(vcffile,cmdfile=''):
     cmd='perl ~/VarDictJava/VarDict/vcf2txt.pl'
-    maffile=re.sub(".vcf.gz",".maf",vcffile)
-    cmd=cmd+' '+vcffile
+    gu=re.sub('.gz'.'',vcffile)
+    maffile=re.sub(".vcf",".maf",gu)
+    cmd=cmd+' '+gu
     print cmd
     if cmdfile=='':
+        os.system('gunzip '+vcffile)
         os.system(cmd+'>'+maffile)
 	os.system('bgzip '+maffile)
     else:
+        cmdfile.write("gunzip "+vcffile)
         cmdfile.write(cmdfile+'>'+maffile+'\n')
 
     return maffile+'.gz'
