@@ -186,7 +186,7 @@ def applyVcfFilter(vcf,cmdfile=''):
 
 def makeMafFromVcf(vcffile,cmdfile=''):
     cmd='perl ~/VarDictJava/VarDict/vcf2txt.pl'
-    gu=re.sub('.gz'.'',vcffile)
+    gu=re.sub('.gz','',vcffile)
     maffile=re.sub(".vcf",".maf",gu)
     cmd=cmd+' '+gu
     print cmd
