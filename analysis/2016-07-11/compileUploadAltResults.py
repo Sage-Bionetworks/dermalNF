@@ -193,10 +193,11 @@ def makeMafFromVcf(vcffile,cmdfile=''):
     if cmdfile=='':
         os.system('gunzip '+vcffile)
         os.system(cmd+'>'+maffile)
-	os.system('bgzip '+maffile)
+        os.system('bgzip '+maffile)
     else:
         cmdfile.write("gunzip "+vcffile)
         cmdfile.write(cmdfile+'>'+maffile+'\n')
+        cmdfile.write('bgzip '+maffile)
 
     return maffile+'.gz'
 
