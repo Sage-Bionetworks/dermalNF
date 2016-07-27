@@ -186,7 +186,7 @@ def applyVcfFilter(vcf,cmdfile=''):
 
 def makeVepMafFromVcf(vcffile,cmdfile=''):
     ofile=re.sub('vcf','maf',vcffile)
-    cmd='perl ~/vcf2maf-master/vcf2maf.pl --input-vcf '+vcffile+' --output-maf '+ofile+' --tumor-id TUMOR --normal-id NORMAL --ref-fasta ~/dermalNF/lib/human_g1k_v37.fasta'
+    cmd='perl ~/vcf2maf-master/vcf2maf.pl --input-vcf '+vcffile+' --output-maf '+ofile+' --tumor-id TUMOR --normal-id NORMAL --ref-fasta ~/dermalNF/lib/ucsc.hg19.fasta'
     if cmdfile=='':
         os.system(cmd)
         os.system('gzip '+ofile)
