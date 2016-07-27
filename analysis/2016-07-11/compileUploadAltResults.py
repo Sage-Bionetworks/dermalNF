@@ -202,6 +202,7 @@ def makeMafFromVcf(vcffile,cmdfile=''):
     return maffile+'.gz'
 
 allpats=['5','6','8','9']
+allpats=['1','2','3','4','11']
 #allpats = ['1']
 for p in allpats:
     res=syn.tableQuery("SELECT DnaID,WGS FROM syn5556216 where Patient=%s"%(p))

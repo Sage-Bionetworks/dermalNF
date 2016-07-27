@@ -185,7 +185,7 @@ def applyVcfFilter(vcf,cmdfile=''):
     return ofile+'.gz'
 
 def makeVepMafFromVcf(vcffile,cmdfile=''):
-    ofile=re.sub('vcf','maf')
+    ofile=re.sub('vcf','maf',vcffile)
     cmd='perl ~/vcf2maf-master/vcf2maf.pl --input-vcf '+vcffile+' --output-maf '+ofile+' --tumor-id TUMOR --normal-id NORMAL --ref-fasta ~/dermalNF/lib/human_g1k_v37.fasta'
     if cmdfile=='':
         os.system(cmd)
@@ -264,7 +264,8 @@ for p in allpats:
             #        si=syn.store(sf_file,activity=sf_act)
 
             maffile = makeVepMafFromVcf(vcf,cmdfile=cmdfile)
-
+	    if not os.path.exists(maffile):
+	    	continue
             sm_file = synapseclient.File(maffile,description='Tumor-normal filtered MAF file',parentId='syn6834373')
             sm_act=synapseclient.activity.Activity(name='MAF from varscan and VEP',used=[normind[0],tu,si],executed=script)
             syn.store(sm_file,activity=sm_act)
@@ -282,7 +283,8 @@ for p in allpats:
             #        si=syn.store(sf_file,activity=sf_act)
 
         maffile = makeVepMafFromVcf(vcf,cmdfile=cmdfile)
-
+	if not os.path.exists(maffile):
+ 	    continue
         sm_file = synapseclient.File(maffile,description='Tumor-normal MAF file',parentId='syn6834373')
         sm_act=synapseclient.activity.Activity(name='MAF from varscan and VEP',used=[normind[0],tu,si],executed=script)
         syn.store(sm_file,activity=sm_act)
