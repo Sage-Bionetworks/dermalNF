@@ -79,18 +79,18 @@ ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
   if(!recalc){
       return(list(LRR=lrr.segM,BAF=baf.segM))
   }
-  
+
   if(is.na(annot))
     annot=snp_annotation_data()
-  
-  
+
+
   f=synGet("syn6182422")@filePath
   unzip(f)
-  
+
   allfiles=list.files('./output_aspcf/all')
-  
+
   ##now we have to do some file name munging to get patient data
-  
+
   ##then merge all files together
   is.autosome <- as.character(annot$Chr) %in% as.character(1:22)
   auto.annot<-annot[is.autosome,]
@@ -99,16 +99,16 @@ ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
   lrr.files<-allfiles[grep("LogR",allfiles)]
   lrr.samps<-sapply(lrr.files,function(x) unlist(strsplit(x,split='.',fixed=T))[1])
 
-  
+
   baf.files<-allfiles[grep('BAF',allfiles)]
   baf.samps<-sapply(baf.files,function(x) unlist(strsplit(x,split='.',fixed=T))[1])
-  
+
   ##now collect mapping info to get patient/sample numbers...
   mapping<-read.table(synGet('syn4999547')@filePath,header=T,sep='\t')
   if(!exists("geneInfo"))
     geneInfo<-read.table('../../data/hg19_geneInfo.txt')
-  
-  
+
+
   ##download all lrr files, read in
   lrr <- do.call("cbind", lapply(lrr.files, function(x) {
     tab<-read.table(paste('output_aspcf/all/',x,sep=''))
@@ -117,14 +117,14 @@ ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
     t2<-tab[na.idx,2]
     names(t2)<-auto.annot$Name[which(!is.na(idx))]
     return(t2)}))
- 
+
   lrr.pats<-sapply(as.character(mapping$Patient.ID[match(lrr.samps,mapping$Sample.ID)]),function(x){
     ps<-unlist(strsplit(x,split=' '))
     pat<-gsub('CT0+','',ps[1])
     samp<-gsub('0+','',ps[2])
     return(paste('Patient',pat,'DNASample',samp,sep='_'))
   })
-  
+
   colnames(lrr)<-lrr.pats
   ##use CN Tools to agglomerate the data, though maybe not segment it?
   ##START WITH LRR
@@ -135,11 +135,11 @@ ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
   segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
   lrr.seg<-segment.smoothed.cna$output
   cs<-CNSeg(lrr.seg)
-  
+
   rdseg <- getRS(cs, by = byval,geneMap=geneInfo, imput = FALSE, XY = FALSE, what =metric)
-  
+
   lrr.segM <- rs(rdseg)
-  
+
   ##doanload all BAF files, read in
   baf <- do.call("cbind", lapply(baf.files, function(x){
    tab<- read.table(paste('output_aspcf/all/',x,sep=''))
@@ -149,14 +149,14 @@ ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
    names(t2)<-auto.annot$Name[which(!is.na(idx))]
    return(t2)}))
 
-  
+
   baf.pats<-sapply(as.character(mapping$Patient.ID[match(baf.samps,mapping$Sample.ID)]),function(x){
     ps<-unlist(strsplit(x,split=' '))
     pat<-gsub('CT0+','',ps[1])
     samp<-gsub('0+','',ps[2])
     return(paste('Patient',pat,'DNASample',samp,sep='_'))
   })
-  
+
   colnames(baf)<-baf.pats
   ##use CN Tools to agglomerate the data, though maybe not segment it?
   ##START WITH LRR
@@ -166,11 +166,11 @@ ascat_segments<-function(recalc=FALSE,annot=NA,byval='gene',metric='median'){
   segment.smoothed.cna <- segment(smoothed.cna, verbose=1)
   baf.seg<-segment.smoothed.cna$output
   cs<-CNSeg(baf.seg)
-  
+
   rdseg <- getRS(cs, by = byval,geneMap=geneInfo, imput = FALSE, XY = FALSE, what =metric)
-  
+
   baf.segM <- rs(rdseg)
-  
+
   return(list(LRR=lrr.segM,BAF=baf.segM,LRR.seg=lrr.seg,BAF.seg=baf.seg))
 }
 #this function gets the original files from the OMNI arrays
@@ -267,8 +267,8 @@ get.protein.from.file<-function(sn,top_only=FALSE){
 
 prot_unnormalized<-function(){
   allfiles= synapseQuery('SELECT name,ID,patientID,tissueID,originalBatch FROM entity WHERE parentId=="syn4984949"')
-  
-  
+
+
     res<-sapply(allfiles$entity.id,function(x) get.protein.from.file(x,TRUE))
    # names(res)<-allfiles$entity.id
     #first col  lect all proteins annotated in any file
@@ -279,24 +279,24 @@ prot_unnormalized<-function(){
     #   expr.prots<-res[['Prot.ids',1]]
     #    for(i in 2:ncol(res))
     #        expr.prots<-intersect(expr.prots,res[['Prot.ids',i]])
-    
+
     prot.ids<-unique(unlist(sapply(all.prots,function(x) unlist(strsplit(x,split=';')))))
-    
+
     #now create biomart mapping
     require(biomaRt)
     ensembl=useMart("ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl",host='www.ensembl.org')
     filters = listFilters(ensembl)
     attributes = listAttributes(ensembl)
-    
+
     epep="ensembl_peptide_id"
     egene='hgnc_symbol'
     gene.mapping<-getBM(attributes=c(epep,egene),filters=c(epep),values=as.list(prot.ids),mart=ensembl)
-    
+
     allsamps<-colnames(res)
     sfiles=sapply(allsamps,function(x) res[['Origin',x]][1])
-    
+
     expr.ratio.mat<-sapply(all.prots,function(x){
-      
+
       pvec<-sapply(allsamps,function(i){
         rv<-grep(x,res[['Prot.ids',i]])
         if(length(rv)==0)
@@ -307,11 +307,11 @@ prot_unnormalized<-function(){
       names(pvec)<-allsamps
       unlist(pvec)
     })
-    
+
     expr.raw.mat<-sapply(all.prots,function(x){
       # pvec<-NULL
       # samps<-NULL
-      
+
       pvec<-sapply(allsamps,function(i){
         rv<-grep(x,res[['Prot.ids',i]])
         if(length(rv)==0)
@@ -322,36 +322,36 @@ prot_unnormalized<-function(){
       names(pvec)<-allsamps
       unlist(pvec)
     })
-    
+
     gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
     expr.ratio.mat[which(is.na(expr.ratio.mat),arr.ind=T)]<-0.0
     #expr.ratio.mat<-expr.ratio.mat[-grep('EMPTY',rownames(expr.ratio.mat)),]
     gn<-gene.mapping[match(colnames(expr.ratio.mat),gene.mapping[,1]),2]
     gn[which(is.na(gn))]<-colnames(expr.ratio.mat)[which(is.na(gn))]
     colnames(expr.ratio.mat)<-gn
-    
+
     gn<-gene.mapping[match(colnames(expr.raw.mat),gene.mapping[,1]),2]
     expr.raw.mat[which(is.na(expr.raw.mat),arr.ind=T)]<-0.0
     #expr.ratio.mat<-expr.ratio.mat[-grep('EMPTY',rownames(expr.ratio.mat)),]
     gn<-gene.mapping[match(colnames(expr.raw.mat),gene.mapping[,1]),2]
     gn[which(is.na(gn))]<-colnames(expr.raw.mat)[which(is.na(gn))]
     colnames(expr.raw.mat)<-gn
-    
+
     ##now create a regular comparison of each sample, protein, and control, patient
     ratios=tidyr::gather(data.frame(Sample=rownames(expr.ratio.mat),expr.ratio.mat),"Protein","Ratio",1+1:ncol(expr.ratio.mat))
     raws=tidyr::gather(data.frame(Sample=rownames(expr.raw.mat),expr.raw.mat),"Protein","RawValue",1+1:ncol(expr.raw.mat))
     patients=sapply(allfiles$entity.patientID[match(raws$Sample,allfiles$entity.id)],function(x) gsub("CT0+","",x))
     tids=paste("Patient",patients,'Tissue',allfiles$entity.tissueID[match(raws$Sample,allfiles$entity.id)],sep='_')
-    
+
         experiments=sapply(allfiles$entity.originalBatch[match(raws$Sample,allfiles$entity.id)],function(x) unlist(strsplit(x,split='_'))[2])
-    
+
     full.df=data.frame(ratios,RawValue=raws$RawValue,Tissue=tids,Patient=patients,Experiment=experiments)
     mindf=subset(full.df,Tissue!='Patient_NULL_Tissue_NULL')
     ggplot(mindf)+geom_boxplot(aes(x=Experiment,y=Ratio,fill=Tissue))+scale_y_log10()
-    
-  
-    return(mindf)    
-    
+
+
+    return(mindf)
+
     }
 
 
@@ -531,7 +531,7 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE,d
     sel.vals=which(apply(gene.pat.mat,1,function(x) all(x>=minCount)))
     if(doVoomNorm)
       gene.pat.mat=ret
-    
+
     return(gene.pat.mat[sel.vals,])
 
 }
@@ -539,8 +539,11 @@ rna_count_matrix<-function(stored=TRUE,doNorm=FALSE,minCount=0,doLogNorm=FALSE,d
 fpkm_annotations<-function(x){
   fpkm_files=synQuery("select sampleID,tissueID,patientID from entity where parentId=='syn5492805'")
   colnames(fpkm_files)<-c('patient','sample','tissue','entity')
+  tumNum<-synTableQuery('select Patient,RnaID,TumorNumber from syn5556216 where RNASeq is not NULL')@values
+
   fpkm_files$patient=sapply(fpkm_files$patient,function(x) gsub('CT0+','',x))
   fpkm_files$sample=sapply(fpkm_files$sample,function(x) paste('X',gsub("-",'.',x),sep=''))
+  fpkm_files$TumorNumber=apply(fpkm_files,1,function(x) tumNum$TumorNumber[intersect(which(tumNum$Patient==x[[1]]),which(tumNum$RnaID==gsub('00','',x[[3]])))])
   fpkm_files
 }
 
