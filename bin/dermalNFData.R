@@ -242,7 +242,7 @@ protein_annotations<-function(){
 #this merely calculates the ratio for each file
 get.protein.from.file<-function(sn,top_only=FALSE){
     sd<-synGet(unlist(sn))
-    tab<-read.table(sd@filePath,sep='\t',header=T,as.is=T)
+    tab<-read.table(sd@filePath,header=T,as.is=T,quote='"')
     nums<-tab[,6]
     denoms<-tab[,7]
     ratios<-nums/denoms
@@ -440,6 +440,40 @@ prot_normalized<-function(store=FALSE,all.expr=TRUE){
 #################
 #RNA
 #################
+patient_tumor_number_rna<-function(idlist,quant='cuffLinks'){
+  if(tolower(quant)=='cufflinks'){
+    ##the PBK ids are missing from table, so need to query annotations
+    res<-synQuery("select patientID,tissueID,sampleID from entity where parentId=='syn5492805'")
+    # map<-unique(res)
+  
+    #from table get generic tumor id
+    tres<-synTableQuery("SELECT Patient,RnaID,TumorNumber,'RNASeq (Cufflinks)' FROM syn5556216 where RnaID is not NULL")@values
+  
+    idx<-match(res$entity.id,tres$`RNASeq (Cufflinks)`)
+  
+    dres<-res[which(!is.na(idx)),]
+    tres<-tres[idx[which(!is.na(idx))],]
+  
+    full.map<-cbind(dres,tres)
+  
+  #map tumors to sample ids
+  sampleIds<-sapply(idlist,function(x){
+    y=which(full.map$entity.sampleID==gsub('”','',x))
+    paste("Patient",full.map$Patient[y],"Tumor",full.map$TumorNumber[y])
+    
+  })
+  
+  }else if(tolower(quant)=='featureCounts'){
+    res<-synTableQuery("SELECT Patient,TumorNumber,RNASeq FROM syn5556216 where RNASeq is not NULL")@values
+    sampleIds<-sapply(idlist,function(x){
+      y=which(res$entity.sampleID==gsub('”','',x))
+      paste("Patient",res$Patient[y],"Tumor",res$TumorNumber[y])
+      
+    })
+  }
+  return(sampleIds)
+}
+
 rna_annotations<-function(){
     synq=synapseQuery("select name,id,patientID,tissueID,alternateTumorID from entity where parentId=='syn5493036'")
     colnames(synq)<-c('patientId','alternateTumorId','fileName','tissueId','synapseId')
