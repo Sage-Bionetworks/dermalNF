@@ -458,15 +458,15 @@ patient_tumor_number_rna<-function(idlist,quant='cuffLinks'){
   
   #map tumors to sample ids
   sampleIds<-sapply(idlist,function(x){
-    y=which(full.map$entity.sampleID==gsub('”','',x))
+    y=which(full.map$entity.sampleID==gsub('X','',gsub('.','-',x,fixed=T)))
     paste("Patient",full.map$Patient[y],"Tumor",full.map$TumorNumber[y])
     
   })
   
-  }else if(tolower(quant)=='featureCounts'){
+  }else if(tolower(quant)=='featurecounts'){
     res<-synTableQuery("SELECT Patient,TumorNumber,RNASeq FROM syn5556216 where RNASeq is not NULL")@values
     sampleIds<-sapply(idlist,function(x){
-      y=which(res$entity.sampleID==gsub('”','',x))
+      y=which(res$RNASeq==gsub('”','',x))
       paste("Patient",res$Patient[y],"Tumor",res$TumorNumber[y])
       
     })
