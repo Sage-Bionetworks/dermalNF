@@ -4,6 +4,7 @@
 library(synapseClient)
 synapseLogin()
 library(data.table)
+library(R.utils)
 
 require(dplyr)
 require(reshape2)
@@ -100,10 +101,13 @@ panPatientPlots<-function(mutTable=all.gene.muts,minSamples=2,notIncluded=c(),pr
 #'Collects MAF files from synapse, separates them by vardict mutation status
 #'@param effect is list of allowable effects.
 #'@return list of list of tables
-divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh=0.05){
+divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh=0.05,patientNumber=''){
 
   ##goal is to filter all by effect, but only somatic/LOH by pvalue...
     allmafs<-synapseQuery("select * from entity where parentId=='syn6022474'")
+    if(patientNumber!='')
+        allmafs<-allmafs[grep(paste('patient_',patientNumber,'_',sep=''),allmafs$entity.name,),]
+
     require(R.utils)
     allMuts<-lapply(allmafs$entity.id,function(x){
         res<-synGet(x)@filePath
@@ -133,11 +137,13 @@ divideMAFfiles<-function(effect=c("LOW","MODERATE","MODIFIER","HIGH"),pvalthresh
 
 
 
-storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
-    mafs=divideMAFfiles(impact,pvalthresh=pvalthresh)
+storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05,patientNumber=''){
+    mafs=divideMAFfiles(impact,pvalthresh=pvalthresh,patientNumber)
     synids<-lapply(mafs,function(x) x$synId)
     all.mafs<-do.call('rbind',lapply(mafs,function(x) rbind(x$Germline,x$Somatic,x$LOH,x$Deletion)))
-  fname=paste('varDictMutations_AllGenesAllSamples_pval',pvalthresh,'_impact',paste(impact,collapse='_'),'.tsv',sep='')
+
+    fname=paste('varDictMutations_AllGenesAllSamples_pval',pvalthresh,ifelse(patientNumber=='','',paste('patient',patientNumber,sep='_')),
+        '_impact',paste(impact,collapse='_'),'.tsv',sep='')
   write.table(all.mafs,file=fname, sep='\t',row.names=F,quote=F,col.names=T)
   #gfname<-paste(fname,'.gz')
                                         #gzip(fname,gfname)
@@ -153,7 +159,7 @@ storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05){
 #'@param impact is a list of which mutations to include, defaults to all ('HIGH','MODERATE' and 'LOW')
 #'@param doPlot: if set to true, will plot some basic statistics about where and when this mutation occurs
 getMutationStatsForGene<-function(expr.gene.muts,gene='NF1',doPlot=FALSE,effect=c("LOW","MODERATE","HIGH"),prefix='p05'){
-  
+
   sdf<-subset(expr.gene.muts,Gene==gene)
   # if()
   sdf$Patient<-sapply(sdf$Sample,function(x) paste(unlist(strsplit(as.character(x),split='_'))[1:2],collapse='_'))
@@ -164,7 +170,7 @@ getMutationStatsForGene<-function(expr.gene.muts,gene='NF1',doPlot=FALSE,effect=
   sdf<-subset(sdf,Effect%in%effect)
   if(nrow(sdf)==0)
     return(sdf)
-  
+
   if(doPlot){
     for(t1 in transcripts){
       tdf<-subset(sdf,Transcript==t1)
@@ -174,7 +180,7 @@ getMutationStatsForGene<-function(expr.gene.muts,gene='NF1',doPlot=FALSE,effect=
       ggsave(p,file=paste('gene',gene,'transcript',t1,'mutationsByType',prefix,'.png',sep=''))
     }
   }
-  return(sdf) 
+  return(sdf)
 }
 
 #'Create a heatmap with PHRED scores (need to add in separately)
