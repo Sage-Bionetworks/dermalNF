@@ -149,7 +149,9 @@ storeMutsForAllGenes<-function(impact=c("HIGH"),pvalthresh=0.05,patientNumber=''
                                         #gzip(fname,gfname)
       ul<-lapply(as.character(synids),function(x) list(entity=x))
 #  ul<-lapply(synids,function(x) list(entity=x))
-  synStore(File(fname,parentId='syn5605256'),used=ul,executed='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')
+    pythoncmd=paste('synapse store',fname,'--parentId syn5605256 --used',paste(synids,collapse=' '),'--executed https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')
+    system(pythoncmd)
+    #'synStore(File(fname,parentId='syn5605256'),used=ul,executed=list(list(url='https://raw.githubusercontent.com/Sage-Bionetworks/dermalNF/master/bin/WGSData_VarDict.R')))
 
 }
 
