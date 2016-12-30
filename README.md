@@ -1,9 +1,9 @@
 ===============
-The molecular landscape of dermal neurofibromatosis
+The molecular landscape of cutaneous neurofibromas
 ===============
-This project is focused on analyzing the molecular landscape of dermal NF and is
+This project is focused on analyzing the molecular landscape of cutaneous NF and is
 funded by the Children's Tumor Foundation.  All available data and key analysis
-steps uploaded to http://www.synapse.org/dermalNF
+steps uploaded to http://www.synapse.org/cutaneousNF
 
 To access the data you will need to register with Synapse and click through to
 get approval to use the data for your own research. One you are authenticated,
@@ -43,12 +43,6 @@ wiki]() with BAM files and RNA quantities available for download.
 
 Gene matrices can be downloaded via various functions in `bin/dermalNFData.R`
 script available [here](./bin/dermalNFData.R).
-
-TODO: list functions
-
-### iTRAQ Proteomics
-Proteomics data is described [on the
-wiki](https://www.synapse.org/#!Synapse:syn4984604/wiki/400309).
 
 ## Structure of this repository
 Binaries used to process this data can be found in [the binaries directory](./bin/) while specific
