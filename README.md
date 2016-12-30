@@ -35,8 +35,6 @@ The WGS data was processed in numerous ways to compare and contrast various
 methods of calling variants and mutation calls. More details are available [on
 the wiki](https://www.synapse.org/#!Synapse:syn4984604/wiki/400307).
 
-TODO: add
-
 ### RNA-Seq
 RNA-Seq collection is described [on the
 wiki]() with BAM files and RNA quantities available for download.
@@ -47,5 +45,3 @@ script available [here](./bin/dermalNFData.R).
 ## Structure of this repository
 Binaries used to process this data can be found in [the binaries directory](./bin/) while specific
 analytical tasks can be found in [the analysis directory](./analysis).
-
-TODO: fill in with more details
